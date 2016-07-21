@@ -1,0 +1,119 @@
+#!/bin/sh
+
+# -------------------------------------------------------
+# A shell script that sets 2-monitors configuration.
+# Written by: Thomas Venries <thomas@myvenries.com>
+# Date: 2016/7/15
+# Modified date: 2016/7/19
+# -------------------------------------------------------
+
+usage()
+{
+	echo -e "\nUsage: docilemon [OPTION]...\n"
+	echo "Operations (can not be used in conjunction):"
+	echo -e "-h:\tPrint this help and exit"
+	echo -e "-o:\tComputer only\n"
+	echo -e "-s:\tSecond monitor only\n"
+
+	echo "Modes (used with a position argument):"
+	echo -e "-e:\tExtend"
+	echo -e "-c:\tExtend"
+
+	echo -e "Positions: (left | right | bottom | top)\n"
+}
+
+no_conjunction_with()
+{
+	while [ $# -ne 0 ]; do
+		[ "$1" = true ] && break || shift
+	done
+
+	if [ $# -eq 0 ]; then
+		return 1
+	fi
+
+	echo "Operation arguments can not be used in conjunction."
+	return 0
+}
+
+check_pos()
+{
+	case $1 in
+		left) return 1;;
+		right) return 1;;
+		bottom) return 1;;
+		up) return 1;;
+		*) return 0 ;;
+	esac
+}
+
+pos2xrandr()
+{
+	local _result
+	case $1 in
+		left) _result="--left-of";;
+		right) _result="--right-of";;
+		bottom) _result="--below";;
+		up) _result="--above";;
+	esac
+	echo $_result
+}
+
+main()
+{
+	local mon_list=( $(xrandr | egrep " connected" | cut -d " " -f 1) )
+	local mon_nb=${#mon_list[@]}
+	local cFlag=false
+	local eFlag=false
+	local sFlag=false
+	local pos=""
+
+	[ $# -eq 0 ] && echo "monitors: ${mon_list[@]}" && exit 0
+
+	if [ "$mon_nb" == 1 ]; then
+		echo -e "Nothing to do with just one monitor.\n\n"
+		usage
+		exit 0
+	fi
+
+	OPTIND=1
+	while getopts "hosc:e:" opt; do
+		case $opt in
+			h) usage && exit 0;;
+			o)
+				xrandr --output ${mon_list[1]} --off
+				xrandr --output ${mon_list[0]} --auto
+				;;
+			c)
+				no_conjunction_with "$eFlag"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				check_pos "$OPTARG"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				pos=$OPTARG
+				eFlag=true
+				;;
+			e)
+				no_conjunction_with "$cFlag"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				check_pos "$OPTARG"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				pos=$OPTARG
+				eFlag=true
+				;;
+			s)
+				xrandr --output ${mon_list[0]} --off
+				xrandr --output ${mon_list[1]} --auto
+				;;
+			\?) usage; exit 2;;
+			*) usage; exit 2;;
+		esac
+	done
+
+	if [ "$eFlag" = true ] ; then
+			xrandr --output ${mon_list[1]} --auto
+			pos=$(pos2xrandr "${pos}")
+			xrandr --output ${mon_list[1]} ${pos} ${mon_list[0]}
+	fi
+}
+
+main "$@"
