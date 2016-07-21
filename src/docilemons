@@ -9,15 +9,15 @@
 
 usage()
 {
-	echo -e "\nUsage: docilemon [OPTION]...\n"
+	echo -e "\nUsage: docilemons [OPTION]...\n"
 	echo "Operations (can not be used in conjunction):"
 	echo -e "-h:\tPrint this help and exit"
-	echo -e "-o:\tComputer only\n"
-	echo -e "-s:\tSecond monitor only\n"
+	echo -e "-o:\tComputer only"
+	echo -e "-s:\tSecond monitor only"
+	echo -e "-d:\tDuplicate\n"
 
 	echo "Modes (used with a position argument):"
-	echo -e "-e:\tExtend"
-	echo -e "-c:\tExtend"
+	echo -e "-e:\tExtend\n"
 
 	echo -e "Positions: (left | right | bottom | top)\n"
 }
@@ -63,8 +63,9 @@ main()
 {
 	local mon_list=( $(xrandr | egrep " connected" | cut -d " " -f 1) )
 	local mon_nb=${#mon_list[@]}
-	local cFlag=false
+	local dFlag=false
 	local eFlag=false
+	local oFlag=false
 	local sFlag=false
 	local pos=""
 
@@ -77,42 +78,55 @@ main()
 	fi
 
 	OPTIND=1
-	while getopts "hosc:e:" opt; do
+	while getopts "hosde:" opt; do
 		case $opt in
 			h) usage && exit 0;;
-			o)
-				xrandr --output ${mon_list[1]} --off
-				xrandr --output ${mon_list[0]} --auto
-				;;
-			c)
-				no_conjunction_with "$eFlag"
+			d)
+				no_conjunction_with "$eFlag" "$oFlag" "$sFlag"
 				if [ "$?" == 0 ]; then usage; exit 2; fi
-				check_pos "$OPTARG"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
-				pos=$OPTARG
-				eFlag=true
+				dFlag=true
 				;;
 			e)
-				no_conjunction_with "$cFlag"
+				no_conjunction_with "$dFlag" "$oFlag" "$sFlag"
 				if [ "$?" == 0 ]; then usage; exit 2; fi
 				check_pos "$OPTARG"
 				if [ "$?" == 0 ]; then usage; exit 2; fi
 				pos=$OPTARG
 				eFlag=true
 				;;
+			o)
+				no_conjunction_with "$dFlag" "$eFlag" "$sFlag"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				oFlag=true
+				;;
 			s)
-				xrandr --output ${mon_list[0]} --off
-				xrandr --output ${mon_list[1]} --auto
+				no_conjunction_with "$dFlag" "$oFlag" "$eFlag"
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				sFlag=true
 				;;
 			\?) usage; exit 2;;
 			*) usage; exit 2;;
 		esac
 	done
 
+	if [ "$dFlag" = true ] ; then
+		xrandr --output ${mon_list[1]} --auto
+	fi
+
 	if [ "$eFlag" = true ] ; then
-			xrandr --output ${mon_list[1]} --auto
-			pos=$(pos2xrandr "${pos}")
-			xrandr --output ${mon_list[1]} ${pos} ${mon_list[0]}
+		pos=$(pos2xrandr "${pos}")
+		xrandr --output ${mon_list[1]} --auto
+		xrandr --output ${mon_list[1]} ${pos} ${mon_list[0]}
+	fi
+
+	if [ "$oFlag" = true ] ; then
+		xrandr --output ${mon_list[1]} --off
+		xrandr --output ${mon_list[0]} --auto
+	fi
+
+	if [ "$sFlag" = true ] ; then
+		xrandr --output ${mon_list[0]} --off
+		xrandr --output ${mon_list[1]} --auto
 	fi
 }
 
