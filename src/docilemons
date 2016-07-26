@@ -116,15 +116,15 @@ main() {
 	for ((i=0; i < ${#list[@]}; i++)); do MON_IDS[${list[$i]}]=$i; done
 
 	if [ "$#" -eq 0 ]; then
-		echo "Plugged:"
-		local stat
+		local isEnabled
 		for ((i=0; i < ${#plugged_mons[@]}; i++)); do
 			if [[ "${enabled_mons[@]}" =~ "${plugged_mons[$i]}" ]]; then
-				stat="- [ENABLED]"
+				isEnabled=" \t[ENABLED]"
 			else
-				stat=""
+				isEnabled=""
 			fi
-			echo "${MON_IDS[${plugged_mons[$i]}]}:${plugged_mons[$i]}$stat"
+			echo -e \
+				"${MON_IDS[${plugged_mons[$i]}]}:${plugged_mons[$i]}$isEnabled"
 		done
 		exit 0
 	fi
