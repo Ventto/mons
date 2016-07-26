@@ -1,44 +1,48 @@
 #!/bin/sh
 
 # -------------------------------------------------------
-# A shell script that sets 2-monitors configuration.
+# A shell script that sets 2-monitors displaying.
 # Written by: Thomas Venries <thomas@myvenries.com>
 # Date: 2016/7/15
-# Modified date: 2016/7/19
+# Modified date: 2016/7/27
 # -------------------------------------------------------
 
-usage()
-{
-	echo -e "\nUsage: docilemons [OPTION]...\n"
-	echo "Operations (can not be used in conjunction):"
-	echo -e "-h:\tPrint this help and exit"
-	echo -e "-o:\tComputer only"
-	echo -e "-s:\tSecond monitor only"
-	echo -e "-d:\tDuplicate\n"
+usage() {
+	echo -e "\nUsage: docilemons [OPTION]...
+Each option can not be used in conjunction.
 
-	echo "Modes (used with a position argument):"
-	echo -e "-e:\tExtend\n"
+Information:
+  (none):\tPrint information about monitors.
+  -h:\t\tPrint this help and exit
 
-	echo -e "Positions: (left | right | bottom | top)\n"
+1-PluggedIn monitor options:
+  -o:\tComputer only
+  -s:\tSecond monitor only
+  -d:\tDuplicate
+  -e [left | right | bottom | up] : Extend
+
+2-PluggedIn monitors options:
+  -C <f>,<s><P> : Selection of two plugged monitors
+\t\t<f>: ID of the first monitor, <s>: ID of the second,
+\t\t<P>: a position indicator [ R | B ],
+\t\t<R> means the second monitor will be displayed on the right
+\t\t(To get IDs, use dxs without option).
+  -F:\tFirst monitor (left or below)
+  -S:\tSecond monitor (right or above)
+
+More information:
+https://github.com/StupidShellScripts/docilemons\n"
 }
 
-no_conjunction_with()
-{
-	while [ $# -ne 0 ]; do
-		[ "$1" = true ] && break || shift
-	done
-
-	if [ $# -eq 0 ]; then
-		return 1
-	fi
-
-	echo "Operation arguments can not be used in conjunction."
-	return 0
+no_conjunction() {
+	local _opt=$1
+	echo "Option '$_opt' can not be used in conjunction."
 }
 
-check_pos()
-{
-	case $1 in
+check_pos() {
+	local _pos=$1
+
+	case $_pos in
 		left) return 1;;
 		right) return 1;;
 		bottom) return 1;;
@@ -47,8 +51,38 @@ check_pos()
 	esac
 }
 
-pos2xrandr()
-{
+check_selection_arg() {
+	local _selection=$1
+	local _monitor_nb=$2
+
+	local first="${_selection:0:1}"
+	local second="${_selection:2:1}"
+	local pos=${_selection:3:1}
+
+	! [[ "$first" =~ ^[0-9]+ ]] && return 0
+	! [[ "$second" =~ ^[0-9]+ ]] && return 0
+	! [ "$pos" == "R" ] && ! [ "$pos" == "B" ] && return 0
+
+	echo $first
+	echo $second
+	echo $pos
+	return 1
+}
+
+which_first() {
+	local _pos=( $1 )
+
+	local _pos0=${_pos[0]}
+	local _pos1=${_pos[1]}
+
+	[ "${_pos0:0:1}" == "0" ] && [ "${_pos1:0:1}" != "0" ] && return 0
+	[ "${_pos0:0:1}" != "0" ] && [ "${_pos1:0:1}" == "0" ] && return 1
+	[ "${_pos0:2:1}" == "0" ] && [ "${_pos1:2:1}" != "0" ] && return 0
+	[ "${_pos0:2:1}" != "0" ] && [ "${_pos1:2:1}" == "0" ] && return 1
+	return 0
+}
+
+pos2xrandr() {
 	local _result
 	case $1 in
 		left) _result="--left-of";;
@@ -59,74 +93,212 @@ pos2xrandr()
 	echo $_result
 }
 
-main()
-{
-	local mon_list=( $(xrandr | egrep " connected" | cut -d " " -f 1) )
-	local mon_nb=${#mon_list[@]}
+turnoff() {
+	local _mons=( "$@" )
+	for (( i=0; i < ${#_mons[@]}; i++ )); do
+		xrandr --output ${_mons[$i]} --off; done
+}
+
+main() {
+	if [ -z "$DISPLAY" ]; then
+		echo "X is not running." && exit 1
+	fi
+
+	local xrandr_out="$(xrandr | grep "connect")"
+	local plug_out="$(echo "$xrandr_out" | grep " connect")"
+	local list=( $(echo "$xrandr_out" | cut -d " " -f 1) )
+	local enabled_out="$(echo "$plug_out" | grep -E "\+[0-9]{1,4}\+[0-9]{1,4}")"
+	local plugged_mons=( $(echo "$plug_out" | cut -d " " -f 1) )
+	local enabled_mons=( $(echo "$enabled_out" | cut -d " " -f 1) )
+
+	declare -A MON_IDS
+
+	for ((i=0; i < ${#list[@]}; i++)); do MON_IDS[${list[$i]}]=$i; done
+
+	if [ "$#" -eq 0 ]; then
+		echo "Plugged:"
+		local stat
+		for ((i=0; i < ${#plugged_mons[@]}; i++)); do
+			if [[ "${enabled_mons[@]}" =~ "${plugged_mons[$i]}" ]]; then
+				stat="- [ENABLED]"
+			else
+				stat=""
+			fi
+			echo "${MON_IDS[${plugged_mons[$i]}]}:${plugged_mons[$i]}$stat"
+		done
+		exit 0
+	fi
+
 	local dFlag=false
 	local eFlag=false
 	local oFlag=false
 	local sFlag=false
-	local pos=""
+	local CFlag=false
+	local FFlag=false
+	local SFlag=false
+	local is_flag=false
 
-	[ $# -eq 0 ] && echo "monitors: ${mon_list[@]}" && exit 0
-
-	if [ "$mon_nb" == 1 ]; then
-		echo -e "Nothing to do with just one monitor.\n\n"
-		usage
-		exit 0
-	fi
+	local selected_opts
+	local pos
 
 	OPTIND=1
-	while getopts "hosde:" opt; do
+	while getopts "hosdFSe:C:" opt; do
 		case $opt in
 			h) usage && exit 0;;
 			d)
-				no_conjunction_with "$eFlag" "$oFlag" "$sFlag"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				is_flag=true
 				dFlag=true
 				;;
 			e)
-				no_conjunction_with "$dFlag" "$oFlag" "$sFlag"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				is_flag=true
 				check_pos "$OPTARG"
 				if [ "$?" == 0 ]; then usage; exit 2; fi
 				pos=$OPTARG
 				eFlag=true
 				;;
 			o)
-				no_conjunction_with "$dFlag" "$eFlag" "$sFlag"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				is_flag=true
 				oFlag=true
 				;;
 			s)
-				no_conjunction_with "$dFlag" "$oFlag" "$eFlag"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				is_flag=true
 				sFlag=true
+				;;
+			C)
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				selected_opts=( $(check_selection_arg "$OPTARG" "${#list[@]}") )
+				if [ "$?" == 0 ]; then usage; exit 2; fi
+				if (( "${selected_opts[0]}" >= "${#list[@]}" )) ||
+					(( "${selected_opts[1]}" >= "${#list[@]}" )); then
+					echo "Bad selection. Try 'dxs' without option."
+					exit 2
+				fi
+				is_flag=true
+				CFlag=true
+				;;
+			F)
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				FFlag=true
+				is_flag=true
+				;;
+			S)
+				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				SFlag=true
+				is_flag=true
 				;;
 			\?) usage; exit 2;;
 			*) usage; exit 2;;
 		esac
 	done
 
+	if [ "$oFlag" = true ] ; then
+		if (( "${#enabled_mons[@]}" == 1)) &&
+			[[ "${enabled_mons[@]}" =~ "${plugged_mons[0]}" ]]; then
+			(( "${#plugged_mons[@]}" == 1)) && xrandr --auto
+			exit 0
+		fi
+		xrandr --display $DISPLAY --output ${enabled_mons[1]} --off && \
+			xrandr --display $DISPLAY --output ${plugged_mons[0]} --auto && \
+			exit 0
+		exit 1
+	fi
+
+	if (( "${#plugged_mons[@]}" == 1 )); then
+		echo "Only one monitor plugged. Nothing to do."
+		exit 0
+	fi
+
 	if [ "$dFlag" = true ] ; then
-		xrandr --output ${mon_list[1]} --auto
+		if (( "${#enabled_mons[@]}" > 2 )); then
+			echo "Too much enabled monitors for this option."
+			exit 0
+		fi
+		xrandr --auto && \
+			xrandr --display $DISPLAY --output ${plugged_mons[1]} \
+				--same-as ${plugged_mons[0]} && exit 0
+		exit 1
 	fi
 
 	if [ "$eFlag" = true ] ; then
+		if (( "${#plugged_mons[@]}" > 2 )); then
+			echo "Too much plugged monitors for this option."
+			exit 0
+		fi
 		pos=$(pos2xrandr "${pos}")
-		xrandr --output ${mon_list[1]} --auto
-		xrandr --output ${mon_list[1]} ${pos} ${mon_list[0]}
-	fi
-
-	if [ "$oFlag" = true ] ; then
-		xrandr --output ${mon_list[1]} --off
-		xrandr --output ${mon_list[0]} --auto
+		xrandr --auto && \
+			xrandr --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]} && \
+			exit 0
+		exit 1
 	fi
 
 	if [ "$sFlag" = true ] ; then
-		xrandr --output ${mon_list[0]} --off
-		xrandr --output ${mon_list[1]} --auto
+		if (( "${#plugged_mons[@]}" > 2 )); then
+			echo "Too much plugged monitors for this option."
+			exit 0
+		fi
+		if (( "${#enabled_mons[@]}" == 1)) &&
+			[[ "${enabled_mons[@]}" =~ "${plugged_mons[1]}" ]]; then
+			exit 0
+		fi
+		echo "${plugged_mons[@]}"
+		xrandr --auto && \
+			xrandr --output ${plugged_mons[0]} --off && \
+			xrandr --output ${plugged_mons[1]} --auto && exit 0
+		exit 1
+	fi
+
+	if (( "${#plugged_mons[@]}" < 3 )); then
+		echo "Not enough plugged monitors for this option."
+		echo "Try 2-Plugged options."
+		exit 0
+	fi
+
+	if [ "$CFlag" = true ] ; then
+		local selected_mons=( ${list[${selected_opts[0]}]} )
+		selected_mons+=( ${list[${selected_opts[1]}]} )
+
+		if ! [[ "${plugged_mons[@]}" =~ "${selected_mons[0]}" ]] ||
+		   ! [[ "${plugged_mons[@]}" =~ "${selected_mons[1]}" ]]; then
+			echo "Bad selection."
+			exit 2
+		fi
+
+		[ "${selected_opts[2]}" == "R" ] && pos="--right-of" || pos="--above"
+
+		enabled_mons=( ${enabled_mons[@]/${selected_mons[0]}/} )
+		enabled_mons=( ${enabled_mons[@]/${selected_mons[1]}/} )
+
+		echo ${enabled_mons[@]}
+
+		turnoff ${enabled_mons[@]} && \
+			xrandr --output ${selected_mons[0]} --auto && \
+			xrandr --output ${selected_mons[1]} --auto && \
+			xrandr --output ${selected_mons[1]} $pos ${selected_mons[0]} && \
+			exit 0
+		exit 1
+	fi
+
+	if (( "${#enabled_mons[@]}" != 2 )); then
+		echo "2-Enabled monitors required for this option."
+		exit 0
+	fi
+
+	local enabled_pos=($(echo "$enabled_out" | cut -d " " -f 3 | cut -d+ -f2,3))
+
+	if [ "$FFlag" = true ] ; then
+		which_first "${enabled_pos[@]}"
+		[ "$?" -eq 0 ] && turnoff ${enabled_mons[1]} && exit 0 || exit 1
+		turnoff ${enabled_mons[0]} && exit 0 || exit 1
+	fi
+
+	if [ "$SFlag" = true ] ; then
+		which_first "${enabled_pos[@]}"
+		turnoff ${enabled_mons[$?]} && exit 0
+		exit 1
 	fi
 }
 
