@@ -131,6 +131,11 @@ main() {
 		exit 0
 	fi
 
+	if (( "${#enabled_mons[@]}" > 2)); then
+		echo "This script can not handle more than 2 monitors."
+		exit 1
+	fi
+
 	local dFlag=false
 	local eFlag=false
 	local oFlag=false
