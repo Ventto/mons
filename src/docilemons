@@ -306,12 +306,11 @@ main() {
 
 		echo ${enabled_mons[@]}
 
-		turnoff ${enabled_mons[@]} && \
-			xrandr --output ${selected_mons[0]} --auto && \
-			xrandr --output ${selected_mons[1]} --auto && \
-			xrandr --output ${selected_mons[1]} $pos ${selected_mons[0]} && \
-			exit 0
-		exit 1
+		enable_mon "${selected_mons[0]}"
+		disable_mons ${enabled_mons[0]}
+		enable_mon "${selected_mons[1]}"
+		xrandr --output ${selected_mons[1]} $pos ${selected_mons[0]}
+		exit 0
 	fi
 
 	if (( "${#enabled_mons[@]}" != 2 )); then
