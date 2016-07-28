@@ -121,7 +121,7 @@ main() {
 		local isEnabled
 		for ((i=0; i < ${#plugged_mons[@]}; i++)); do
 			if [[ "${enabled_mons[@]}" =~ "${plugged_mons[$i]}" ]]; then
-				isEnabled=" \t[ENABLED]"
+				isEnabled="  \t[ENABLED]"
 			else
 				isEnabled=""
 			fi
