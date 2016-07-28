@@ -61,7 +61,7 @@ check_selection_arg() {
 
 	! [[ "$first" =~ ^[0-9]+ ]] && return 0
 	! [[ "$second" =~ ^[0-9]+ ]] && return 0
-	! [ "$pos" == "R" ] && ! [ "$pos" == "B" ] && return 0
+	! [ "$pos" == "R" ] && ! [ "$pos" == "U" ] && return 0
 
 	echo $first
 	echo $second
