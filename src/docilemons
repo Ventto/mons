@@ -70,15 +70,17 @@ check_selection_arg() {
 }
 
 which_first() {
-	local _pos=( $1 )
+	local _pos=( "$@" )
 
-	local _pos0=${_pos[0]}
-	local _pos1=${_pos[1]}
+	local pos0_x="$(echo ${_pos[0]} | cut -d + -f 1)"
+	local pos0_y="$(echo ${_pos[0]} | cut -d + -f 2)"
+	local pos1_x="$(echo ${_pos[1]} | cut -d + -f 1)"
+	local pos1_y="$(echo ${_pos[1]} | cut -d + -f 2)"
 
-	[ "${_pos0:0:1}" == "0" ] && [ "${_pos1:0:1}" != "0" ] && return 0
-	[ "${_pos0:0:1}" != "0" ] && [ "${_pos1:0:1}" == "0" ] && return 1
-	[ "${_pos0:2:1}" == "0" ] && [ "${_pos1:2:1}" != "0" ] && return 0
-	[ "${_pos0:2:1}" != "0" ] && [ "${_pos1:2:1}" == "0" ] && return 1
+	[ "$pos0_x" -eq "0" ] && [ "$pos1_x" -ne "0" ] && return 0
+	[ "$pos0_x" -ne "0" ] && [ "$pos1_x" -eq "0" ] && return 1
+	[ "$pos0_y" -eq "0" ] && [ "$pos1_y" -ne "0" ] && return 0
+	[ "$pos0_y" -ne "0" ] && [ "$pos1_y" -eq "0" ] && return 1
 	return 0
 }
 
@@ -291,8 +293,8 @@ main() {
 
 	if [ "$FFlag" = true ] ; then
 		which_first "${enabled_pos[@]}"
-		[ "$?" -eq 0 ] && turnoff ${enabled_mons[1]} && exit 0 || exit 1
-		turnoff ${enabled_mons[0]} && exit 0 || exit 1
+		[ "$?" -eq 0 ] && turnoff ${enabled_mons[1]} && exit 0
+		turnoff ${enabled_mons[0]} && exit 0
 	fi
 
 	if [ "$SFlag" = true ] ; then
