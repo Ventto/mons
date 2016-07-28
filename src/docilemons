@@ -323,14 +323,15 @@ main() {
 
 	if [ "$FFlag" = true ] ; then
 		which_first "${enabled_pos[@]}"
-		[ "$?" -eq 0 ] && turnoff ${enabled_mons[1]} && exit 0
-		turnoff ${enabled_mons[0]} && exit 0
+		[ "$?" -eq 0 ] && disable_mons ${enabled_mons[1]} && exit 0
+		disable_mons ${enabled_mons[0]}
+		exit 0
 	fi
 
 	if [ "$SFlag" = true ] ; then
 		which_first "${enabled_pos[@]}"
-		turnoff ${enabled_mons[$?]} && exit 0
-		exit 1
+		disable_mons ${enabled_mons[$?]}
+		exit 0
 	fi
 }
 
