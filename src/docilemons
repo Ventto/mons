@@ -10,10 +10,44 @@
 XRANDR=/usr/bin/xrandr
 SCRIPTNAME="$(basename $0)"
 
-no_conjunction() {
-	local _opt=$1
-	echo "Option '$_opt' can not be used in conjunction."
-	exit 2
+disable_monitors() {
+	local _mons=( "$@" )
+
+	for (( i=0; i < ${#_mons[@]}; i++ )); do
+		$XRANDR --output ${_mons[$i]} --off
+	done
+}
+
+enable_monitor() {
+	local _mon="$@"
+
+	$XRANDR --display $DISPLAY --output $_mon --auto
+}
+
+which_first() {
+	local _pos=( "$@" )
+
+	local pos0_x="$(echo ${_pos[0]} | cut -d + -f 1)"
+	local pos0_y="$(echo ${_pos[0]} | cut -d + -f 2)"
+	local pos1_x="$(echo ${_pos[1]} | cut -d + -f 1)"
+	local pos1_y="$(echo ${_pos[1]} | cut -d + -f 2)"
+
+	[ "$pos0_x" -eq "0" ] && [ "$pos1_x" -ne "0" ] && return 0
+	[ "$pos0_x" -ne "0" ] && [ "$pos1_x" -eq "0" ] && return 1
+	[ "$pos0_y" -eq "0" ] && [ "$pos1_y" -ne "0" ] && return 0
+	[ "$pos0_y" -ne "0" ] && [ "$pos1_y" -eq "0" ] && return 1
+	return 0
+}
+
+arg2xrandr() {
+	local _result
+	case $1 in
+		left) _result="--left-of";;
+		right) _result="--right-of";;
+		bottom) _result="--below";;
+		up) _result="--above";;
+	esac
+	echo $_result
 }
 
 check_pos() {
@@ -46,44 +80,10 @@ check_selection_arg() {
 	return 1
 }
 
-which_first() {
-	local _pos=( "$@" )
-
-	local pos0_x="$(echo ${_pos[0]} | cut -d + -f 1)"
-	local pos0_y="$(echo ${_pos[0]} | cut -d + -f 2)"
-	local pos1_x="$(echo ${_pos[1]} | cut -d + -f 1)"
-	local pos1_y="$(echo ${_pos[1]} | cut -d + -f 2)"
-
-	[ "$pos0_x" -eq "0" ] && [ "$pos1_x" -ne "0" ] && return 0
-	[ "$pos0_x" -ne "0" ] && [ "$pos1_x" -eq "0" ] && return 1
-	[ "$pos0_y" -eq "0" ] && [ "$pos1_y" -ne "0" ] && return 0
-	[ "$pos0_y" -ne "0" ] && [ "$pos1_y" -eq "0" ] && return 1
-	return 0
-}
-
-pos2xrandr() {
-	local _result
-	case $1 in
-		left) _result="--left-of";;
-		right) _result="--right-of";;
-		bottom) _result="--below";;
-		up) _result="--above";;
-	esac
-	echo $_result
-}
-
-disable_mons() {
-	local _mons=( "$@" )
-
-	for (( i=0; i < ${#_mons[@]}; i++ )); do
-		$XRANDR --output ${_mons[$i]} --off
-	done
-}
-
-enable_mon() {
-	local _mon="$@"
-
-	$XRANDR --display $DISPLAY --output $_mon --auto
+no_conjunction() {
+	local _opt=$1
+	echo "Option '$_opt' can not be used in conjunction."
+	exit 2
 }
 
 usage() {
@@ -227,17 +227,17 @@ main() {
 					exit $?
 				fi
 			fi
-			disable_mons ${enabled_mons[1]}
+			disable_monitors ${enabled_mons[1]}
 			exit 0
 		fi
 		if (( "${#enabled_mons[@]}" > 1)); then
-			disable_mons "${enabled_mons[0]}"
-			enable_mon "${plugged_mons[0]}"
-			disable_mons "${enabled_mons[1]}"
+			disable_monitors "${enabled_mons[0]}"
+			enable_monitor "${plugged_mons[0]}"
+			disable_monitors "${enabled_mons[1]}"
 			exit 0
 		fi
-		enable_mon "${plugged_mons[0]}"
-		disable_mons "${enabled_mons[0]}"
+		enable_monitor "${plugged_mons[0]}"
+		disable_monitors "${enabled_mons[0]}"
 		exit 0
 	fi
 
@@ -262,7 +262,7 @@ main() {
 			echo "Too much plugged monitors for this option."
 			exit 0
 		fi
-		pos=$(pos2xrandr "${pos}")
+		pos=$(arg2xrandr "${pos}")
 		$XRANDR --auto && \
 			$XRANDR --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]} && \
 			exit 0
@@ -278,8 +278,8 @@ main() {
 				[[ "${enabled_mons[@]}" =~ "${plugged_mons[1]}" ]]; then
 				exit 0
 		fi
-		enable_mon ${plugged_mons[1]}
-		disable_mons ${enabled_mons[0]}
+		enable_monitor ${plugged_mons[1]}
+		disable_monitors ${enabled_mons[0]}
 		exit 0
 	fi
 
@@ -306,9 +306,9 @@ main() {
 
 		echo ${enabled_mons[@]}
 
-		enable_mon "${selected_mons[0]}"
-		disable_mons ${enabled_mons[0]}
-		enable_mon "${selected_mons[1]}"
+		enable_monitor "${selected_mons[0]}"
+		disable_monitors ${enabled_mons[0]}
+		enable_monitor "${selected_mons[1]}"
 		$XRANDR --output ${selected_mons[1]} $pos ${selected_mons[0]}
 		exit 0
 	fi
@@ -322,14 +322,14 @@ main() {
 
 	if [ "$FFlag" = true ] ; then
 		which_first "${enabled_pos[@]}"
-		[ "$?" -eq 0 ] && disable_mons ${enabled_mons[1]} && exit 0
-		disable_mons ${enabled_mons[0]}
+		[ "$?" -eq 0 ] && disable_monitors ${enabled_mons[1]} && exit 0
+		disable_monitors ${enabled_mons[0]}
 		exit 0
 	fi
 
 	if [ "$SFlag" = true ] ; then
 		which_first "${enabled_pos[@]}"
-		disable_mons ${enabled_mons[$?]}
+		disable_monitors ${enabled_mons[$?]}
 		exit 0
 	fi
 }
