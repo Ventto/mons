@@ -76,14 +76,12 @@ disable_mons() {
 
 	for (( i=0; i < ${#_mons[@]}; i++ )); do
 		$XRANDR --output ${_mons[$i]} --off
-		echo "xrandr --output ${_mons[$i]} --off" >> "$HOME/$SCRIPTNAME.log"
 	done
 }
 
 enable_mon() {
 	local _mon="$@"
 
-	echo "xrandr --display $DISPLAY --output $_mon --auto" >> "$HOME/$SCRIPTNAME.log"
 	$XRANDR --display $DISPLAY --output $_mon --auto
 }
 
@@ -219,11 +217,9 @@ main() {
 	done
 
 	if [ "$oFlag" = true ] ; then
-		echo "---> o" >> "$HOME/$SCRIPTNAME.log"
 		if [[ "${enabled_mons[@]}" =~ "${plugged_mons[0]}" ]]; then
 			if (( "${#plugged_mons[@]}" == 1)); then
 				if (( "${#enabled_mons[@]}" == 1)); then
-					echo "xrandr --auto" >> "$HOME/$SCRIPTNAME.log"
 					$XRANDR --auto
 					exit $?
 				fi
@@ -259,7 +255,6 @@ main() {
 	fi
 
 	if [ "$eFlag" = true ] ; then
-		echo "---> e" >> "$HOME/$SCRIPTNAME.log"
 		if (( "${#plugged_mons[@]}" > 2 )); then
 			echo "Too much plugged monitors for this option."
 			exit 0
@@ -267,15 +262,11 @@ main() {
 		pos=$(pos2xrandr "${pos}")
 		$XRANDR --auto && \
 			$XRANDR --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]} && \
-		echo "xrandr --auto" >> "$HOME/$SCRIPTNAME.log"
-		echo "xrandr --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]}" >> \
-		"$HOME/$SCRIPTNAME.log"
 			exit 0
 		exit 1
 	fi
 
 	if [ "$sFlag" = true ] ; then
-		echo "---> s" >> "$HOME/$SCRIPTNAME.log"
 		if (( "${#plugged_mons[@]}" != 2 )); then
 			echo "Strictly two plugged monitors for this option"
 			exit 0
