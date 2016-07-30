@@ -119,9 +119,8 @@ EOH
 }
 
 main() {
-	if [ -z "$DISPLAY" ]; then
-		echo "X is not running." && exit 1
-	fi
+	[ -z "$DISPLAY" ] && echo "X is not running." && exit 1
+	! [ -f "$XRANDR" ] && echo "XRandR is not found." && exit 1
 
 	local xrandr_out="$($XRANDR | grep "connect")"
 	local plug_out="$(echo "$xrandr_out" | grep " connect")"
