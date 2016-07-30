@@ -13,6 +13,7 @@ SCRIPTNAME="$(basename $0)"
 no_conjunction() {
 	local _opt=$1
 	echo "Option '$_opt' can not be used in conjunction."
+	exit 2
 }
 
 check_pos() {
@@ -113,6 +114,8 @@ More information:
 https://github.com/StupidShellScripts/$SCRIPTNAME
 
 EOH
+
+	exit
 }
 
 main() {
@@ -165,34 +168,34 @@ main() {
 	OPTIND=1
 	while getopts "hosdFSe:C:" opt; do
 		case $opt in
-			h) usage && exit 0;;
+			h) usage;;
 			d)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				is_flag=true
 				dFlag=true
 				;;
 			e)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				is_flag=true
 				check_pos "$OPTARG"
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				if [ "$?" == 0 ]; then usage; fi
 				pos=$OPTARG
 				eFlag=true
 				;;
 			o)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				is_flag=true
 				oFlag=true
 				;;
 			s)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				is_flag=true
 				sFlag=true
 				;;
 			C)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				selected_opts=( $(check_selection_arg "$OPTARG" "${#list[@]}") )
-				if [ "$?" == 0 ]; then usage; exit 2; fi
+				[ "$?" == 0 ] && usage;
 				if (( "${selected_opts[0]}" >= "${#list[@]}" )) ||
 					(( "${selected_opts[1]}" >= "${#list[@]}" )); then
 					echo "Bad selection. Try 'dxs' without option."
@@ -202,17 +205,17 @@ main() {
 				CFlag=true
 				;;
 			F)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				FFlag=true
 				is_flag=true
 				;;
 			S)
-				[ "$is_flag" = true ] && no_conjunction "$opt" && exit 2
+				[ "$is_flag" = true ] && no_conjunction "$opt"
 				SFlag=true
 				is_flag=true
 				;;
-			\?) usage; exit 2;;
-			*) usage; exit 2;;
+			\?) usage;;
+			*) usage;;
 		esac
 	done
 
