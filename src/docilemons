@@ -4,35 +4,11 @@
 # A shell script that sets 2-monitors displaying.
 # Written by: Thomas Venries <thomas@myvenries.com>
 # Date: 2016/7/15
-# Modified date: 2016/7/27
+# Modified date: 2016/7/30
 # -------------------------------------------------------
 
-usage() {
-	echo -e "\nUsage: docilemons [OPTION]...
-Each option can not be used in conjunction.
-
-Information:
-  (none):\tPrint information about monitors.
-  -h:\t\tPrint this help and exit
-
-1-PluggedIn monitor options:
-  -o:\tComputer only
-  -s:\tSecond monitor only
-  -d:\tDuplicate
-  -e [left | right | bottom | up] : Extend
-
-2-PluggedIn monitors options:
-  -C <f>,<s><P> : Selection of two plugged monitors
-\t\t<f>: ID of the first monitor, <s>: ID of the second,
-\t\t<P>: a position indicator [ R | B ],
-\t\t<R> means the second monitor will be displayed on the right
-\t\t(To get IDs, use dxs without option).
-  -F:\tFirst monitor (left or below)
-  -S:\tSecond monitor (right or above)
-
-More information:
-https://github.com/StupidShellScripts/docilemons\n"
-}
+XRANDR=/usr/bin/xrandr
+SCRIPTNAME="$(basename $0)"
 
 no_conjunction() {
 	local _opt=$1
@@ -99,16 +75,46 @@ disable_mons() {
 	local _mons=( "$@" )
 
 	for (( i=0; i < ${#_mons[@]}; i++ )); do
-		xrandr --output ${_mons[$i]} --off
-		echo "xrandr --output ${_mons[$i]} --off" >> "$HOME/docilemons.log"
+		$XRANDR --output ${_mons[$i]} --off
+		echo "xrandr --output ${_mons[$i]} --off" >> "$HOME/$SCRIPTNAME.log"
 	done
 }
 
 enable_mon() {
 	local _mon="$@"
 
-	echo "xrandr --display $DISPLAY --output $_mon --auto" >> "$HOME/docilemons.log"
-	xrandr --display $DISPLAY --output $_mon --auto
+	echo "xrandr --display $DISPLAY --output $_mon --auto" >> "$HOME/$SCRIPTNAME.log"
+	$XRANDR --display $DISPLAY --output $_mon --auto
+}
+
+usage() {
+	cat <<EOH
+Usage: $SCRIPTNAME [OPTION]...
+Each option can not be used in conjunction.
+
+Information:
+  (none):	Print information about monitors.
+  -h:		Print this help and exit
+
+1-PluggedIn monitor options:
+  -o:	Computer only
+  -s:	Second monitor only
+  -d:	Duplicate
+  -e [left | right | bottom | up] : Extend
+
+2-PluggedIn monitors options:
+  -C <f>,<s><P> : Selection of two plugged monitors
+		<f>: ID of the first monitor, <s>: ID of the second,
+		<P>: a position indicator [ R | B ],
+		<R> means the second monitor will be displayed on the right
+		(To get IDs, use dxs without option).
+  -F:	First monitor (left or below)
+  -S:	Second monitor (right or above)
+
+More information:
+https://github.com/StupidShellScripts/$SCRIPTNAME
+
+EOH
 }
 
 main() {
@@ -116,7 +122,7 @@ main() {
 		echo "X is not running." && exit 1
 	fi
 
-	local xrandr_out="$(xrandr | grep "connect")"
+	local xrandr_out="$($XRANDR | grep "connect")"
 	local plug_out="$(echo "$xrandr_out" | grep " connect")"
 	local list=( $(echo "$xrandr_out" | cut -d " " -f 1) )
 	local enabled_out="$(echo "$plug_out" | grep -E "\+[0-9]{1,4}\+[0-9]{1,4}")"
@@ -213,12 +219,12 @@ main() {
 	done
 
 	if [ "$oFlag" = true ] ; then
-		echo "---> o" >> "$HOME/docilemons.log"
+		echo "---> o" >> "$HOME/$SCRIPTNAME.log"
 		if [[ "${enabled_mons[@]}" =~ "${plugged_mons[0]}" ]]; then
 			if (( "${#plugged_mons[@]}" == 1)); then
 				if (( "${#enabled_mons[@]}" == 1)); then
-					echo "xrandr --auto" >> "$HOME/docilemons.log"
-					xrandr --auto
+					echo "xrandr --auto" >> "$HOME/$SCRIPTNAME.log"
+					$XRANDR --auto
 					exit $?
 				fi
 			fi
@@ -246,30 +252,30 @@ main() {
 			echo "Too much enabled monitors for this option."
 			exit 0
 		fi
-		xrandr --auto && \
-			xrandr --display $DISPLAY --output ${plugged_mons[1]} \
+		$XRANDR --auto && \
+			$XRANDR --display $DISPLAY --output ${plugged_mons[1]} \
 				--same-as ${plugged_mons[0]}
 		exit 0
 	fi
 
 	if [ "$eFlag" = true ] ; then
-		echo "---> e" >> "$HOME/docilemons.log"
+		echo "---> e" >> "$HOME/$SCRIPTNAME.log"
 		if (( "${#plugged_mons[@]}" > 2 )); then
 			echo "Too much plugged monitors for this option."
 			exit 0
 		fi
 		pos=$(pos2xrandr "${pos}")
-		xrandr --auto && \
-			xrandr --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]} && \
-		echo "xrandr --auto" >> "$HOME/docilemons.log"
+		$XRANDR --auto && \
+			$XRANDR --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]} && \
+		echo "xrandr --auto" >> "$HOME/$SCRIPTNAME.log"
 		echo "xrandr --display $DISPLAY --output ${plugged_mons[1]} ${pos} ${plugged_mons[0]}" >> \
-		"$HOME/docilemons.log"
+		"$HOME/$SCRIPTNAME.log"
 			exit 0
 		exit 1
 	fi
 
 	if [ "$sFlag" = true ] ; then
-		echo "---> s" >> "$HOME/docilemons.log"
+		echo "---> s" >> "$HOME/$SCRIPTNAME.log"
 		if (( "${#plugged_mons[@]}" != 2 )); then
 			echo "Strictly two plugged monitors for this option"
 			exit 0
@@ -309,7 +315,7 @@ main() {
 		enable_mon "${selected_mons[0]}"
 		disable_mons ${enabled_mons[0]}
 		enable_mon "${selected_mons[1]}"
-		xrandr --output ${selected_mons[1]} $pos ${selected_mons[0]}
+		$XRANDR --output ${selected_mons[1]} $pos ${selected_mons[0]}
 		exit 0
 	fi
 
