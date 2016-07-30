@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# -------------------------------------------------------
-# A shell script that sets 2-monitors displaying.
+# ---------------------------------------------------------------
+# XRandR-based Shell script as simple monitor configuration tool
 # Written by: Thomas Venries <thomas@myvenries.com>
 # Date: 2016/7/15
 # Modified date: 2016/7/30
-# -------------------------------------------------------
+# ---------------------------------------------------------------
 
 XRANDR=/usr/bin/xrandr
 SCRIPTNAME="$(basename $0)"
@@ -90,7 +90,7 @@ enable_mon() {
 usage() {
 	cat <<EOH
 Usage: $SCRIPTNAME [OPTION]...
-Each option can not be used in conjunction.
+Options can not be used in conjunction.
 
 Information:
   (none):	Print information about monitors.
