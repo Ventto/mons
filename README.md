@@ -11,19 +11,19 @@ Dependence:
 ## Usage
 ``docilemons [OPTION]...``
 
-Each option can not be used in conjunction.
+Options can not be used in conjunction.
 
 ### Information:
-* (none): Print the selected controller's name and the brightness thresholds.
+* (none): Print information about monitors
 * -h: Print this help and exit
 
-### 1-PluggedIn monitor options (laptop + one external monitor):
+### 1-PluggedIn monitor options (laptop + 1 monitor):
 * -o:	Computer only
 * -s:	Second monitor only
 * -d:	Duplicate
 * -e [left | right | bottom | up] : Extend
 
-### 2-PluggedIn monitors options (two external monitors):
+### 2-PluggedIn monitors options (laptop + 2 monitors):
 * -C [ ID ],[ ID ][POSITION] : Selection of two monitors plugged in
 	- [ ID ]: Monitor's ID (run docilemons without option to get monitor IDs).<br>
 	[ POSITION ]: 'R' or 'U',
@@ -33,6 +33,34 @@ Each option can not be used in conjunction.
 * -S:	Second monitor (same logic with 'right or above')
 
 ## Examples
+### Laptop + 1 monitor
+```
+$ docilemons
+// output
+0:LVDS-1 [ENABLED]    <-- laptop monitor at first
+5:VGA-1
+
+$ docilemons -e right <--  VGA-1 will be on the right
+$ docilemons
+// output
+0:LVDS-1 [ENABLED]
+5:VGA-1  [ENABLED]
+
+$ docilemons -s       <-- VGA-1 will be the only one enabled
+$ docilemons
+// output
+0:LVDS-1              <-- LVDS-1 disabled
+5:VGA-1  [ENABLED]
+
+$ docilemons -o
+$ docilemons
+// output
+0:LVDS-1 [ENABLED]
+5:VGA-1
+
+```
+
+### Laptop + 2 monitors
 ```
 $ docilemons
 // output
