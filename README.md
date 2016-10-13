@@ -1,29 +1,33 @@
 Docilemons
 ===================
 
-## Description
-Docilemons is a Shell script using XRandR to manage at the most two monitors
-plug to a laptop.
+*Docilemons is a Shell script using XRandR to manage at the most two monitors
+plug in.*
 
-Dependence:
-* libxrandr - X11 RandR extension library
+## Dependencies
+
+* *libxrandr* - X11 RandR extension library
+* *bash*
 
 ## Usage
-``docilemons [OPTION]...``
 
-Options can not be used in conjunction.
+```
+docilemons [OPTION]...
+```
 
-### Information:
+*Options can not be used in conjunction.*`
+
+### Options
 * (none): Print information about monitors
 * -h: Print this help and exit
 
-### 1-PluggedIn monitor options (laptop + 1 monitor):
+### 1-monitor options (laptop + 1 monitor):
 * -o:	Computer only
 * -s:	Second monitor only
 * -d:	Duplicate
 * -e [left | right | bottom | up] : Extend
 
-### 2-PluggedIn monitors options (laptop + 2 monitors):
+### 2-monitors options (laptop + 2 monitors):
 * -C [ ID ],[ ID ][POSITION] : Selection of two monitors plugged in
 	- [ ID ]: Monitor's ID (run docilemons without option to get monitor IDs).<br>
 	[ POSITION ]: 'R' or 'U',
@@ -33,6 +37,7 @@ Options can not be used in conjunction.
 * -S:	Second monitor (same logic with 'right or above')
 
 ## Examples
+
 ### Laptop + 1 monitor
 ```
 $ docilemons
