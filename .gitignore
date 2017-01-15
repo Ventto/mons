@@ -2,7 +2,7 @@
 
 !src/
 src/*
-!src/docilemons
+!src/mons.sh
 
 !README.md
 !LICENSE
