@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# Copyright 2016 Thomas "Ventto" Venriès <thomas.venries@gmail.com>
 #
-# Lux is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The MIT License (MIT)
 #
-# Lux is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# Copyright (c) 2015-2016 Thomas "Ventto" Venriès <thomas.venries@gmail.com>
 #
-# You should have received a copy of the GNU General Public License
-# along with Lux.  If not, see <http://www.gnu.org/licenses/>.
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 usage() {
     echo -e "Usage: mons [OPTION]...
 Options can not be used in conjunction.
@@ -23,16 +30,16 @@ Information:
   -v:\tPrints version and exits
 
 Two monitors:
-  -o:\tComputer only
+  -o:\tPreferred monitor only
   -s:\tSecond monitor only
-  -d:\tDuplicate
-  -e:\tExtend [ top | left | right | bottom ]
+  -d:\tDuplicates
+  -e:\tExtends [ top | left | right | bottom ]
 
 Three monitors:
-  -O:\tEnables the selected monitor only
-  -P:\tSelection of two monitors [MON1,MON2:P]"
+  -O:\tEnables only the selected monitor only
+  -S:\tEnables only two monitors [MON1,MON2:P]"
     echo -e "\tMON1 and MON2 are monitor IDs given by the information option,"
-    echo -e "\tP is the placement reference, [R] right or [B] bottom for MON2."
+    echo -e "\tP is the placement, [R] right or [B] bottom for MON2."
 }
 
 version() {
@@ -75,15 +82,15 @@ main() {
     local oFlag=false
     local sFlag=false
     local OFlag=false
-    local PFlag=false
+    local SFlag=false
     local is_flag=false
 
     local eArg
     local OArg
-    local PArg
+    local SArg
 
     OPTIND=1
-    while getopts "hvosde:P:O:" opt; do
+    while getopts "hvosde:O:S:" opt; do
         case $opt in
             h)  usage && exit ;;
             v)  version && exit ;;
@@ -110,8 +117,8 @@ main() {
                 [[ ! "${OPTARG:2:1}" =~ ^[0-9]+$ ]]    && arg_err
                 [[ ! "${OPTARG:4:1}" =~ ^[RB]$ ]]      && arg_err
                 [ "${OPTARG:0:1}" == "${OPTARG:2:1}" ] && arg_err
-                PArg=$OPTARG
-                PFlag=true ; is_flag=true
+                SArg=$OPTARG
+                SFlag=true ; is_flag=true
                 ;;
             \?) usage && exit ;;
             :)  usage && exit ;;
@@ -207,10 +214,10 @@ main() {
         exit 0
     fi
 
-    if $PFlag ; then
-        local mon1="${PArg:0:1}"
-        local mon2="${PArg:2:1}"
-        local area="${PArg:4:1}"
+    if $SFlag ; then
+        local mon1="${SArg:0:1}"
+        local mon2="${SArg:2:1}"
+        local area="${SArg:4:1}"
 
         if [ "${mon1}" -ge "${#mons[@]}" || "${mon2}" -ge "${#mons[@]}" ]; then
             echo "One or both selected monitors do not exist."
