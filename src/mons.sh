@@ -22,34 +22,36 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 usage() {
     echo -e "Usage: mons [OPTION]...
+
 Options can not be used in conjunction.
+If no argument, prints plugged monitor ID list.
 
 Information:
-  none:\tPrints monitor ID list
-  -h:\tPrints this help and exits
-  -v:\tPrints version and exits
+  -h:\tPrints this help and exits.
+  -v:\tPrints version and exits.
 
 Two monitors:
-  -o:\tPreferred monitor only
-  -s:\tSecond monitor only
-  -d:\tDuplicates
-  -e:\tExtends [ top | left | right | bottom ]
+  -o:\tPreferred monitor only.
+  -s:\tSecond monitor only.
+  -d:\tDuplicates.
+  -e:\tExtends [ top | left | right | bottom ].
 
-Three monitors:
-  -O:\tEnables only the selected monitor only
-  -S:\tEnables only two monitors [MON1,MON2:P]"
-    echo -e "\tMON1 and MON2 are monitor IDs given by the information option,"
-    echo -e "\tP is the placement, [R] right or [B] bottom for MON2."
+More monitors:
+  -O:\tEnables only the selected monitor ID.
+  -S:\tEnables only two monitors [MON1,MON2:P],
+     \tMON1 and MON2 are monitor IDs,
+     \tP takes the value [R] right or [T] top for the MON2's placement."
 }
 
 version() {
-    echo -e "Mons 0.1b
+    echo -e "Mons 0.1
 Copyright (C) 2016 Thomas \"Ventto\" Venries.\n
-License GPLv3+: GNU GPL version 3 or later
-<http://gnu.org/licenses/gpl.html>.
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE\n"
+
+License MIT: <https://opensource.org/licenses/MIT>.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n"
 }
 
 arg_err() {
@@ -64,7 +66,14 @@ enable_mon() {
 }
 
 disable_mons() {
-    while [ "$#" -ne 0 ] ; do ${XRANDR} --output ${1} --off ; shift ; done
+    while [ $# -ne 0 ] ; do ${XRANDR} --output ${1} --off ; shift ; done
+}
+
+# Find the index of a given monitor in the enabled monitor list.
+is_enabled() {
+    for last; do true; done
+    for i in `seq 0 $(($#-1))`; do [ "$1" == "$last" ] && break || shift ; done
+    [ "$i" -ne "$(($#-1))" ] && echo "-1" || echo "$i"
 }
 
 arg2xrandr() {
@@ -84,10 +93,6 @@ main() {
     local OFlag=false
     local SFlag=false
     local is_flag=false
-
-    local eArg
-    local OArg
-    local SArg
 
     OPTIND=1
     while getopts "hvosde:O:S:" opt; do
@@ -109,13 +114,14 @@ main() {
                 eFlag=true ; is_flag=true
                 ;;
             O)  $is_flag && arg_err
-                ! [[ "${OPTARG}" =~ "^[0-9]+" ]] && arg_err
+                [[ ! "${OPTARG}" =~ ^[0-9]+ ]] && arg_err
+                OArg=$OPTARG
                 OFlag=true ; is_flag=true
                 ;;
-            P)  $is_flag && arg_err
+            S)  $is_flag && arg_err
                 [[ ! "${OPTARG:0:1}" =~ ^[0-9]+$ ]]    && arg_err
                 [[ ! "${OPTARG:2:1}" =~ ^[0-9]+$ ]]    && arg_err
-                [[ ! "${OPTARG:4:1}" =~ ^[RB]$ ]]      && arg_err
+                [[ ! "${OPTARG:4:1}" =~ ^[RT]$ ]]      && arg_err
                 [ "${OPTARG:0:1}" == "${OPTARG:2:1}" ] && arg_err
                 SArg=$OPTARG
                 SFlag=true ; is_flag=true
@@ -134,82 +140,74 @@ main() {
 
     local enabled_out="$(echo "${xrandr_out}" | grep -E "\+[0-9]{1,4}\+[0-9]{1,4}")"
     local mons=( $(echo "${xrandr_out}" | cut -d ' ' -f 1) )
-    local plugged_mons=( $(echo "${xrandr_out}" | grep ' connect'| cut -d " " -f 1) )
-    local enabled_mons=( $(echo "${enabled_out}" | cut -d " " -f 1) )
+    local plug_mons=( $(echo "${xrandr_out}" | grep ' connect'| cut -d " " -f 1) )
+    local disp_mons=( $(echo "${enabled_out}" | cut -d " " -f 1) )
 
     if [ "$#" -eq 0 ]; then
+        local state
         for ((i=0; i < ${#mons[@]}; i++)); do
-            echo -n "${i}: ${mons[$i]}"
-            if [[ "${plugged_mons[@]}" =~ "${mons[$i]}" ]] ; then
-                if [[ "${enabled_mons[@]}" =~ "${mons[$i]}" ]] ; then
-                    echo -e "\t(plugged)"
-                else
-                    echo -e "\t(enabled)"
-                fi
-            else
-                echo
+            if [[ "${plug_mons[@]}" =~ "${mons[$i]}" ]] ; then
+                [[ "${disp_mons[@]}" =~ "${mons[$i]}" ]] && state="(enabled)"
+                printf "%-3s %-9s %-9s\n" "${i}:" "${mons[$i]}" "$state"
             fi
+            state=""
         done
         exit
     fi
 
     if $oFlag ; then
-        if [ "${#plugged_mons[@]}" -eq 1 ] ; then
-            ${XRANDR} --auto
+        if [ "${#plug_mons[@]}" -eq 1 ] ; then
+            ${XRANDR} --auto 2>&1 || exit
         else
-            if [ "${#enabled_mons[@]}" -eq 1 ] ; then
-                if [ "${enabled_mons[0]}" == "${plugged_mons[0]}" ] ; then
-                    enable_mon ${plugged_mons[0]}
-                    exit $?
+            if [ "${#disp_mons[@]}" -eq 1 ] ; then
+                if [ "${disp_mons[0]}" == "${plug_mons[0]}" ] ; then
+                    enable_mon ${plug_mons[0]}
+                    exit
                 fi
             fi
-            bin_mons=( "${enabled_mons[@]/${plugged_mons[0]}}" )
-            disable_mons "${bin_mons[@]}"
-            enable_mon ${plugged_mons[0]}
+            idx=$(is_enabled ${disp_mons[@]} ${plug_mons[0]})
+            disp_mons=( "${disp_mons[@]:(($idx))}" )
+            disable_mons ${disp_mons[@]}
+            enable_mon ${plug_mons[0]}
         fi
         exit $?
     fi
 
-    if [ "${#plugged_mons[@]}" -eq 1 ] ; then
+    if [ "${#plug_mons[@]}" -eq 1 ] ; then
         echo "Only one monitor detected."
         exit
     fi
 
-    if [ "${#enabled_mons[@]}" -gt 2 ]; then
-        echo "Can not handle more than two monitors."
-        exit
-    fi
-
-    if ( $dFlag || $eFlag || $sFlag ) && [ "${#plugged_mons[@]}" -gt 2 ] ; then
+    if ( $dFlag || $eFlag || $sFlag ) && [ "${#plug_mons[@]}" -gt 2 ] ; then
         echo "At most two plugged monitors for this option."
         exit
     fi
 
     if $dFlag ; then
-        ${XRANDR} --auto && \
-         ${XRANDR} --output ${plugged_mons[1]} --same-as ${plugged_mons[0]}
+        ${XRANDR} --auto
+        ${XRANDR} --output ${plug_mons[1]} --same-as ${plug_mons[0]}
         exit $?
     fi
 
     if $eFlag ; then
-        ${XRANDR} --auto && \
-         ${XRANDR} --output ${plugged_mons[1]} $(arg2xrandr ${eArg}) ${plugged_mons[0]}
+        ${XRANDR} --auto
+        ${XRANDR} --output ${plug_mons[1]} $(arg2xrandr $eArg) ${plug_mons[0]}
         exit $?
     fi
 
     if $sFlag ; then
-        if [ "${#enabled_mons[@]}" -eq 1 ] ; then
-            if [ "${enabled_mons[0]}" == "${plugged_mons[1]}" ] ; then
-                enable_mon ${plugged_mons[1]}
+        if [ "${#disp_mons[@]}" -eq 1 ] ; then
+            if [ "${disp_mons[0]}" == "${plug_mons[1]}" ] ; then
+                enable_mon ${plug_mons[1]}
                 exit
             fi
         fi
-        enable_mon ${plugged_mons[1]} && \
-        disable_mons ${enabled_mons[0]}
+        enable_mon ${plug_mons[1]}
+        disable_mons ${disp_mons[0]}
         exit
     fi
 
-    if [ "${#plugged_mons[@]}" -lt 3 ] ; then
+    if [ "${#plug_mons[@]}" -lt 3 ] ; then
         echo "At least three plugged monitors for this option."
         exit 0
     fi
@@ -219,42 +217,48 @@ main() {
         local mon2="${SArg:2:1}"
         local area="${SArg:4:1}"
 
-        if [ "${mon1}" -ge "${#mons[@]}" || "${mon2}" -ge "${#mons[@]}" ]; then
-            echo "One or both selected monitors do not exist."
+        if [ "${mon1}" -ge "${#mons[@]}" -o "${mon2}" -ge "${#mons[@]}" ]; then
+            echo "One or both monitor IDs do not exist."
+            echo "Try without option to get monitor ID list."
             exit 2
         fi
-        if [[ ! "${plugged_mons[@]}" =~ "${mons[${mon1}]}" ]] ; then
-            echo "One or both selected monitors are not plugged in."
-            exit 2
-        fi
-        if [[ ! "${plugged_mons[@]}" =~ "${mons[${mon2}]}" ]] ; then
-            echo "One or both selected monitors are not plugged in."
+        if [[ ! "${plug_mons[@]}" =~ "${mons[${mon1}]}" || \
+            ! "${plug_mons[@]}" =~ "${mons[${mon2}]}" ]] ; then
+            echo "One or both monitor IDs are not plugged in."
+            echo "Try without option to get monitor ID list."
             exit 2
         fi
 
         [ "${area}" == "R" ] && area="--right-of" || area="--above"
 
-        bin_mons=( "${enabled_mons[@]/${mons[${mon1}]}/${mons[${mon2}]}}" )
-        disable_mons "${bin_mons[@]}"
-        ${XRANDR} --output ${mon2} ${area} ${mon1}
-        exit
-    fi
-
-    if [ "${#enabled_mons[@]}" -ne 2 ] ; then
-        echo "At least two enabled monitors for this option."
+        idx=$(is_enabled ${disp_mons[@]} ${mons[$mon1]})
+        [ $idx -ge 0 ] && unset disp_mons[$(($idx))]
+        disp_mons=( "${disp_mons[@]}" )
+        idx=$(is_enabled ${disp_mons[@]} ${mons[$mon2]})
+        [ $idx -ge 0 ] && unset disp_mons[$(($idx))]
+        disp_mons=( "${disp_mons[@]}" )
+        disable_mons ${disp_mons[@]}
+        "${XRANDR}" --output "${mons[${mon2}]}" "${area}" "${mons[${mon1}]}"
         exit
     fi
 
     if $OFlag ; then
         if [ "${OArg}" -ge "${#mons[@]}" ] ; then
-            echo "Selected monitor does not exist."
+            echo "Monitor ID '${OArg}' does not exist."
+            echo "Try without option to get monitor ID list."
             exit 2
         fi
-        if ! [[ "${plugged_mons[@]}" =~ "${mons[${OArg}]}" ]] ; then
-            echo "Selected monitors is not plugged in."
+        if ! [[ "${plug_mons[@]}" =~ "${mons[${OArg}]}" ]] ; then
+            echo "Monitor ID '${OArg}' not plugged in."
+            echo "Try without option to get monitor ID list."
             exit 2
         fi
-        disable_mons ${enabled_mons[@]}
+
+        idx=$(is_enabled ${disp_mons[@]} ${mons[${OArg}]})
+        [ "$idx" -ge 0 ] && unset disp_mons[$(($idx))]
+        disp_mons=( "${disp_mons[@]}" )
+
+        disable_mons ${disp_mons[@]}
         enable_mon ${mons[${OArg}]}
     fi
 }
