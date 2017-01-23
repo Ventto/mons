@@ -44,7 +44,7 @@ More monitors:
 }
 
 version() {
-    echo -e "Mons 0.1
+    echo -e "Mons 0.2b
 Copyright (C) 2016 Thomas \"Ventto\" Venries.\n
 
 License MIT: <https://opensource.org/licenses/MIT>.
@@ -58,22 +58,21 @@ arg_err() {
     usage && exit 2
 }
 
-[ -f "/usr/bin/xrandr" ] && XRANDR="/usr/bin/xrandr"
-[ -z "${XRANDR}" -a -f "/bin/xrandr" ] && XRANDR="/bin/xrandr"
-
 enable_mon() {
-    ${XRANDR} --display ${DISPLAY} --output ${1} --auto
+    "${XRANDR}" --display "${DISPLAY}" --output "${1}" --auto
 }
 
 disable_mons() {
-    while [ $# -ne 0 ] ; do ${XRANDR} --output ${1} --off ; shift ; done
+    while [ $# -ne 0 ] ; do "${XRANDR}" --output "${1}" --off ; shift ; done
 }
 
 # Find the index of a given monitor in the enabled monitor list.
 is_enabled() {
     for last; do true; done
-    for i in `seq 0 $(($#-1))`; do [ "$1" == "$last" ] && break || shift ; done
-    [ "$i" -ne "$(($#-1))" ] && echo "-1" || echo "$i"
+    for i in $(seq 0 $(($#-1))); do
+        if [ "$1" == "$last" ]; then break; else shift; fi
+    done
+    if [ "$i" -ne "$(($#-1))" ]; then echo "-1"; else echo "$i"; fi
 }
 
 arg2xrandr() {
@@ -131,23 +130,33 @@ main() {
         esac
     done
 
+    if [ -f "/usr/bin/xrandr" ]; then
+        XRANDR="/usr/bin/xrandr"
+    else
+        if [ -f "/bin/xrandr" ]; then
+            XRANDR="/bin/xrandr"
+        else
+            echo "xrandr not found." ; exit 1
+        fi
+    fi
+
     [ -z "${DISPLAY}" ] && echo "X: server not started."     && exit 1
     [ -z "${XRANDR}" ]  && echo "xrandr: command not found." && exit 1
 
-    local xrandr_out="$(${XRANDR} | grep connect)"
+    xrandr_out="$(${XRANDR} | grep connect)"
 
     [ -z "${xrandr_out}" ] && echo "No connected monitor." && exit
 
-    local enabled_out="$(echo "${xrandr_out}" | grep -E "\+[0-9]{1,4}\+[0-9]{1,4}")"
-    local mons=( $(echo "${xrandr_out}" | cut -d ' ' -f 1) )
-    local plug_mons=( $(echo "${xrandr_out}" | grep ' connect'| cut -d " " -f 1) )
-    local disp_mons=( $(echo "${enabled_out}" | cut -d " " -f 1) )
+    enabled_out="$(echo "${xrandr_out}" | grep -E "\+[0-9]{1,4}\+[0-9]{1,4}")"
+    mons=( $(echo "${xrandr_out}" | cut -d ' ' -f 1) )
+    plug_mons=( $(echo "${xrandr_out}" | grep ' connect'| cut -d " " -f 1) )
+    disp_mons=( $(echo "${enabled_out}" | cut -d " " -f 1) )
 
     if [ "$#" -eq 0 ]; then
         local state
         for ((i=0; i < ${#mons[@]}; i++)); do
-            if [[ "${plug_mons[@]}" =~ "${mons[$i]}" ]] ; then
-                [[ "${disp_mons[@]}" =~ "${mons[$i]}" ]] && state="(enabled)"
+            if [[ "${plug_mons[@]}" =~ ${mons[$i]} ]] ; then
+                [[ "${disp_mons[@]}" =~ ${mons[$i]} ]] && state="(enabled)"
                 printf "%-3s %-9s %-9s\n" "${i}:" "${mons[$i]}" "$state"
             fi
             state=""
@@ -161,14 +170,15 @@ main() {
         else
             if [ "${#disp_mons[@]}" -eq 1 ] ; then
                 if [ "${disp_mons[0]}" == "${plug_mons[0]}" ] ; then
-                    enable_mon ${plug_mons[0]}
+                    enable_mon "${plug_mons[0]}"
                     exit
                 fi
             fi
-            idx=$(is_enabled ${disp_mons[@]} ${plug_mons[0]})
-            disp_mons=( "${disp_mons[@]:(($idx))}" )
+            idx=$(is_enabled ${disp_mons[@]} "${plug_mons[0]}")
+            [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
+            disp_mons=( "${disp_mons[@]}" )
             disable_mons ${disp_mons[@]}
-            enable_mon ${plug_mons[0]}
+            enable_mon "${plug_mons[0]}"
         fi
         exit $?
     fi
@@ -184,26 +194,26 @@ main() {
     fi
 
     if $dFlag ; then
-        ${XRANDR} --auto
-        ${XRANDR} --output ${plug_mons[1]} --same-as ${plug_mons[0]}
+        "${XRANDR}" --auto
+        "${XRANDR}" --output "${plug_mons[1]}" --same-as "${plug_mons[0]}"
         exit $?
     fi
 
     if $eFlag ; then
-        ${XRANDR} --auto
-        ${XRANDR} --output ${plug_mons[1]} $(arg2xrandr $eArg) ${plug_mons[0]}
+        "${XRANDR}" --auto
+        "${XRANDR}" --output "${plug_mons[1]}" "$(arg2xrandr "$eArg")" "${plug_mons[0]}"
         exit $?
     fi
 
     if $sFlag ; then
         if [ "${#disp_mons[@]}" -eq 1 ] ; then
             if [ "${disp_mons[0]}" == "${plug_mons[1]}" ] ; then
-                enable_mon ${plug_mons[1]}
+                enable_mon "${plug_mons[1]}"
                 exit
             fi
         fi
-        enable_mon ${plug_mons[1]}
-        disable_mons ${disp_mons[0]}
+        enable_mon "${plug_mons[1]}"
+        disable_mons "${disp_mons[0]}"
         exit
     fi
 
@@ -217,13 +227,13 @@ main() {
         local mon2="${SArg:2:1}"
         local area="${SArg:4:1}"
 
-        if [ "${mon1}" -ge "${#mons[@]}" -o "${mon2}" -ge "${#mons[@]}" ]; then
+        if [ "${mon1}" -ge "${#mons[@]}" ] || [ "${mon2}" -ge "${#mons[@]}" ]; then
             echo "One or both monitor IDs do not exist."
             echo "Try without option to get monitor ID list."
             exit 2
         fi
-        if [[ ! "${plug_mons[@]}" =~ "${mons[${mon1}]}" || \
-            ! "${plug_mons[@]}" =~ "${mons[${mon2}]}" ]] ; then
+        if [[ ! "${plug_mons[@]}" =~ ${mons[${mon1}]} || \
+            ! "${plug_mons[@]}" =~ ${mons[${mon2}]} ]] ; then
             echo "One or both monitor IDs are not plugged in."
             echo "Try without option to get monitor ID list."
             exit 2
@@ -231,11 +241,11 @@ main() {
 
         [ "${area}" == "R" ] && area="--right-of" || area="--above"
 
-        idx=$(is_enabled ${disp_mons[@]} ${mons[$mon1]})
-        [ $idx -ge 0 ] && unset disp_mons[$(($idx))]
+        idx=$(is_enabled ${disp_mons[@]} "${mons[$mon1]}")
+        [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
         disp_mons=( "${disp_mons[@]}" )
-        idx=$(is_enabled ${disp_mons[@]} ${mons[$mon2]})
-        [ $idx -ge 0 ] && unset disp_mons[$(($idx))]
+        idx=$(is_enabled ${disp_mons[@]} "${mons[$mon2]}")
+        [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
         disp_mons=( "${disp_mons[@]}" )
         disable_mons ${disp_mons[@]}
         "${XRANDR}" --output "${mons[${mon2}]}" "${area}" "${mons[${mon1}]}"
@@ -248,18 +258,18 @@ main() {
             echo "Try without option to get monitor ID list."
             exit 2
         fi
-        if ! [[ "${plug_mons[@]}" =~ "${mons[${OArg}]}" ]] ; then
+        if ! [[ "${plug_mons[@]}" =~ ${mons[${OArg}]} ]] ; then
             echo "Monitor ID '${OArg}' not plugged in."
             echo "Try without option to get monitor ID list."
             exit 2
         fi
 
-        idx=$(is_enabled ${disp_mons[@]} ${mons[${OArg}]})
-        [ "$idx" -ge 0 ] && unset disp_mons[$(($idx))]
+        idx=$(is_enabled ${disp_mons[@]} "${mons[${OArg}]}")
+        [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
         disp_mons=( "${disp_mons[@]}" )
 
         disable_mons ${disp_mons[@]}
-        enable_mon ${mons[${OArg}]}
+        enable_mon "${mons[${OArg}]}"
     fi
 }
 
