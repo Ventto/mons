@@ -10,13 +10,18 @@ The purpose is to use *mons* as shortcut and quick command on a daily basis or a
 
 # Installation
 
-*"Installation as AUR package, soon."*
+## AUR Package
+
+```
+$ yaourt -S mons
+```
+
+## Manual
 
 ```
 $ git clone https://github.com/Ventto/mons.git
 $ cd mons
 $ chmod +x src/mons.sh
-$ ./src/mons.sh
 ```
 
 # Usage
