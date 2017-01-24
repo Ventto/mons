@@ -4,6 +4,7 @@
 src/*
 !src/mons.sh
 
-!README.md
+!CONTRIBUTING.md
 !LICENSE
+!README.md
 !.gitignore
