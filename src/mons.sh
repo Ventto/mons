@@ -143,7 +143,7 @@ main() {
     [ -z "${DISPLAY}" ] && echo "X: server not started."     && exit 1
     [ -z "${XRANDR}" ]  && echo "xrandr: command not found." && exit 1
 
-    xrandr_out="$(${XRANDR} | grep connect)"
+    xrandr_out="$("${XRANDR}" | grep connect)"
 
     [ -z "${xrandr_out}" ] && echo "No connected monitor." && exit
 
@@ -166,7 +166,7 @@ main() {
 
     if $oFlag ; then
         if [ "${#plug_mons[@]}" -eq 1 ] ; then
-            ${XRANDR} --auto 2>&1 || exit
+            "${XRANDR}" --auto
         else
             if [ "${#disp_mons[@]}" -eq 1 ] ; then
                 if [ "${disp_mons[0]}" == "${plug_mons[0]}" ] ; then
