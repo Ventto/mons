@@ -1,7 +1,7 @@
 Mons
 ===================
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/Ventto/mons/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.2b-orange.svg?style=flat)](https://github.com/Ventto/mons)
+[![Version](https://img.shields.io/badge/version-v0.2-orange.svg?style=flat)](https://github.com/Ventto/mons)
 [![Language (Bash)](https://img.shields.io/badge/powered_by-Bash-brightgreen.svg)](https://www.gnu.org/software/bash)
 
 *"Mons is a Bash script to quickly manage 2-monitors display using xrandr."*
@@ -10,13 +10,13 @@ The purpose is to use *mons* as shortcut and quick command on a daily basis or a
 
 # Installation
 
-## AUR Package
+* Package (AUR)
 
 ```
 $ yaourt -S mons
 ```
 
-## Manual
+* Manual
 
 ```
 $ git clone https://github.com/Ventto/mons.git
