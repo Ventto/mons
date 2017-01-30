@@ -248,6 +248,8 @@ main() {
         [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
         disp_mons=( "${disp_mons[@]}" )
         disable_mons ${disp_mons[@]}
+        enable_mon "${mons[${mon1}]}"
+        enable_mon "${mons[${mon2}]}"
         "${XRANDR}" --output "${mons[${mon2}]}" "${area}" "${mons[${mon1}]}"
         exit
     fi
