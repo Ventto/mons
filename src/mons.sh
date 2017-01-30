@@ -44,7 +44,7 @@ More monitors:
 }
 
 version() {
-    echo -e "Mons 0.2
+    echo -e "Mons 0.3
 Copyright (C) 2016 Thomas \"Ventto\" Venries.\n
 
 License MIT: <https://opensource.org/licenses/MIT>.
