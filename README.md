@@ -93,13 +93,13 @@ $ mons -O 5
 You may need to display the first and the third one on the right:
 
 ```
-$ mons -S 0,5R
+$ mons -S 0,5:R
 ```
 
 Like above but you want to inverse the placement:
 
 ```
-$ mons -S 5,0R
+$ mons -S 5,0:R
 ```
 
 
