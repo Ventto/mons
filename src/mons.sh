@@ -93,7 +93,6 @@ main() {
     local SFlag=false
     local is_flag=false
 
-    OPTIND=1
     while getopts "hvosde:O:S:" opt; do
         case $opt in
             h)  usage   ; exit ;;
@@ -164,6 +163,8 @@ main() {
         done
         exit
     fi
+
+    shift $((OPTIND - 1))
 
     if $oFlag ; then
         if [ "${#plug_mons[@]}" -eq 1 ] ; then
