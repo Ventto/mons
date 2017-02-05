@@ -223,6 +223,26 @@ main() {
         exit 0
     fi
 
+    if $OFlag ; then
+        if [ "${OArg}" -ge "${#mons[@]}" ] ; then
+            echo "Monitor ID '${OArg}' does not exist."
+            echo "Try without option to get monitor ID list."
+            exit 2
+        fi
+        if ! [[ "${plug_mons[@]}" =~ ${mons[${OArg}]} ]] ; then
+            echo "Monitor ID '${OArg}' not plugged in."
+            echo "Try without option to get monitor ID list."
+            exit 2
+        fi
+
+        idx=$(is_enabled ${disp_mons[@]} "${mons[${OArg}]}")
+        [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
+        disp_mons=( "${disp_mons[@]}" )
+
+        disable_mons ${disp_mons[@]}
+        enable_mon "${mons[${OArg}]}"
+    fi
+
     if $SFlag ; then
         local mon1="${SArg:0:1}"
         local mon2="${SArg:2:1}"
@@ -253,26 +273,6 @@ main() {
         enable_mon "${mons[${mon2}]}"
         "${XRANDR}" --output "${mons[${mon2}]}" "${area}" "${mons[${mon1}]}"
         exit
-    fi
-
-    if $OFlag ; then
-        if [ "${OArg}" -ge "${#mons[@]}" ] ; then
-            echo "Monitor ID '${OArg}' does not exist."
-            echo "Try without option to get monitor ID list."
-            exit 2
-        fi
-        if ! [[ "${plug_mons[@]}" =~ ${mons[${OArg}]} ]] ; then
-            echo "Monitor ID '${OArg}' not plugged in."
-            echo "Try without option to get monitor ID list."
-            exit 2
-        fi
-
-        idx=$(is_enabled ${disp_mons[@]} "${mons[${OArg}]}")
-        [ "$idx" -ge 0 ] && unset disp_mons[$((idx))]
-        disp_mons=( "${disp_mons[@]}" )
-
-        disable_mons ${disp_mons[@]}
-        enable_mon "${mons[${OArg}]}"
     fi
 }
 
