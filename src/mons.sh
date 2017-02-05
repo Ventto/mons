@@ -55,7 +55,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n"
 }
 
 arg_err() {
-    usage && exit 2
+    usage ; exit 2
 }
 
 enable_mon() {
@@ -66,7 +66,7 @@ disable_mons() {
     while [ $# -ne 0 ] ; do "${XRANDR}" --output "${1}" --off ; shift ; done
 }
 
-# Find the index of a given monitor in the enabled monitor list.
+# Finds the index of a given monitor in the enabled monitor list.
 is_enabled() {
     for last; do true; done
     for i in $(seq 0 $(($#-1))); do
@@ -96,8 +96,8 @@ main() {
     OPTIND=1
     while getopts "hvosde:O:S:" opt; do
         case $opt in
-            h)  usage && exit ;;
-            v)  version && exit ;;
+            h)  usage   ; exit ;;
+            v)  version ; exit ;;
             o)  $is_flag && arg_err
                 oFlag=true ; is_flag=true
                 ;;
@@ -108,7 +108,10 @@ main() {
                 dFlag=true ; is_flag=true
                 ;;
             e)  $is_flag && arg_err
-                case ${OPTARG} in left | right | bottom | top) ;; *) arg_err ;; esac
+                case ${OPTARG} in
+                    left | right | bottom | top) ;;
+                    *) arg_err ;;
+                esac
                 eArg=$OPTARG
                 eFlag=true ; is_flag=true
                 ;;
@@ -125,19 +128,17 @@ main() {
                 SArg=$OPTARG
                 SFlag=true ; is_flag=true
                 ;;
-            \?) usage && exit ;;
-            :)  usage && exit ;;
+            \?) arg_err ;;
+            :)  arg_err ;;
         esac
     done
 
     if [ -f "/usr/bin/xrandr" ]; then
         XRANDR="/usr/bin/xrandr"
+    elif [ -f "/bin/xrandr" ]; then
+        XRANDR="/bin/xrandr"
     else
-        if [ -f "/bin/xrandr" ]; then
-            XRANDR="/bin/xrandr"
-        else
-            echo "xrandr not found." ; exit 1
-        fi
+        echo "xrandr: command not found." ; exit 1
     fi
 
     [ -z "${DISPLAY}" ] && echo "X: server not started."     && exit 1
