@@ -132,11 +132,8 @@ main() {
         esac
     done
 
-    if [ -f "/usr/bin/xrandr" ]; then
-        XRANDR="/usr/bin/xrandr"
-    elif [ -f "/bin/xrandr" ]; then
-        XRANDR="/bin/xrandr"
-    else
+    XRANDR=$(command -v xrandr)
+    if [ "$?" -ne 0 ]; then
         echo "xrandr: command not found." ; exit 1
     fi
 
