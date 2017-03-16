@@ -1,0 +1,277 @@
+#!/bin/sh
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2015-2016 Thomas "Ventto" Venriès <thomas.venries@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+if [ ! -f "/usr/lib/posix-shell-list/list.sh" ]; then
+    echo '/usr/lib/posix-shell-list/list.sh: library not found.'
+    exit 1
+fi
+
+. /usr/lib/posix-shell-list/list.sh
+
+usage() {
+    echo 'Usage: mons [OPTION]...
+
+Options can not be used in conjunction.
+If no argument, prints plugged monitor ID list.
+
+Information:
+  -h:    Prints this help and exits.
+  -v:    Prints version and exits.
+
+Two monitors:
+  -o:    Preferred monitor only.
+  -s:    Second monitor only.
+  -d:    Duplicates.
+  -e:    Extends [ top | left | right | bottom ].
+
+More monitors:
+  -O:    Enables only the selected monitor ID.
+  -S:    Enables only two monitors [MON1,MON2:P],
+         MON1 and MON2 are monitor IDs,
+          P takes the value [R] right or [T] top for the MON2 placement.
+'
+}
+
+version() {
+    echo 'Mons 0.5
+Copyright (C) 2016 Thomas "Ventto" Venries.
+
+License MIT: <https://opensource.org/licenses/MIT>.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+'
+}
+
+arg_err() {
+    usage ; exit 2
+}
+
+enable_mon() {
+    "${XRANDR}" --display "${DISPLAY}" --output "${1}" --auto
+}
+
+disable_mons() {
+    for mon in $@; do "${XRANDR}" --output "${mon}" --off ; done
+}
+
+arg2xrandr() {
+    case $1 in
+        left)   echo '--left-of'    ;;
+        right)  echo '--right-of'   ;;
+        bottom) echo '--below'      ;;
+        top)    echo '--above'      ;;
+    esac
+}
+
+main() {
+    dFlag=false
+    eFlag=false
+    oFlag=false
+    sFlag=false
+    OFlag=false
+    SFlag=false
+    is_flag=false
+
+    while getopts 'hvosde:O:S:' opt; do
+        case $opt in
+            h)  usage   ; exit ;;
+            v)  version ; exit ;;
+            o)  $is_flag && arg_err
+                oFlag=true ; is_flag=true
+                ;;
+            s)  $is_flag && arg_err
+                sFlag=true ; is_flag=true
+                ;;
+            d)  $is_flag && arg_err
+                dFlag=true ; is_flag=true
+                ;;
+            e)  $is_flag && arg_err
+                case ${OPTARG} in
+                    left | right | bottom | top) ;;
+                    *) arg_err ;;
+                esac
+                eArg=$OPTARG
+                eFlag=true ; is_flag=true
+                ;;
+            O)  $is_flag && arg_err
+                ! echo "${OPTARG}" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                OArg=$OPTARG
+                OFlag=true ; is_flag=true
+                ;;
+            S)  $is_flag && arg_err
+                idx1="$(echo "${OPTARG}" | cut -d',' -f1)"
+                idx2="$(echo "${OPTARG}" | cut -d',' -f2)"
+                area="$(echo "${idx2}" | cut -d ':' -f2)"
+                idx2="$(echo "${idx2}" | cut -d ':' -f1)"
+                ! echo "${idx1}" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                ! echo "${idx2}" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                ! echo "${area}" | grep -E '^[RT]$' > /dev/null && arg_err
+                [ "${idx1}" = "${idx2}" ] && arg_err
+                SFlag=true ; is_flag=true
+                ;;
+            \?) arg_err ;;
+            :)  arg_err ;;
+        esac
+    done
+
+    XRANDR="$(command -v xrandr)"
+    if [ "$?" -ne 0 ]; then
+        echo 'xrandr: command not found.' ; exit 1
+    fi
+
+    [ -z "${DISPLAY}" ] && echo 'X: server not started.'     && exit 1
+    [ -z "${XRANDR}" ]  && echo 'xrandr: command not found.' && exit 1
+
+    xrandr_out="$("${XRANDR}" | grep connect)"
+
+    [ -z "${xrandr_out}" ] && echo 'No connected monitor.' && exit
+
+    enabled_out="$(echo "${xrandr_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
+    mons="$(echo "${xrandr_out}" | cut -d' ' -f1)"
+    plug_mons="$(echo "${xrandr_out}" | grep ' connect'| cut -d' ' -f1)"
+    disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
+
+    if [ "$#" -eq 0 ]; then
+        i=0
+        for mon in ${mons}; do
+            if echo "${plug_mons}" | grep "${mon}" > /dev/null; then
+                if echo "${disp_mons}" | grep "${mon}" > /dev/null; then
+                    state='(enabled)'
+                fi
+                printf '%-3s %-9s %-9s\n' "${i}:" "${mon}" "${state}"
+            fi
+            i=$((i+1))
+            state=
+        done
+        exit
+    fi
+
+    shift $((OPTIND - 1))
+
+    if $oFlag ; then
+        if [ "$(list_len "${plug_mons}")" -eq 1 ]; then
+            "${XRANDR}" --auto
+        else
+            if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
+                if [ "$(list_head "${disp_mons}")" = "$(list_head "${plug_mons}")" ]; then
+                    enable_mon "$(list_head "${plug_mons}")"
+                    exit
+                fi
+            fi
+            disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
+            disable_mons "${disp_mons}"
+            enable_mon "$(list_head "${plug_mons}")"
+        fi
+        exit $?
+    fi
+
+    if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
+        echo 'Only one monitor detected.'
+        exit
+    fi
+
+    if ( $dFlag || $eFlag || $sFlag ) && \
+        [ "$(list_len "${plug_mons}")" -gt 2 ]; then
+        echo 'At most two plugged monitors for this option.'
+        exit
+    fi
+
+    if $dFlag ; then
+        "${XRANDR}" --auto
+        "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+            --same-as "$(list_head "${plug_mons}")"
+        exit $?
+    fi
+
+    if $eFlag ; then
+        "${XRANDR}" --auto
+        "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+            "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
+        exit $?
+    fi
+
+    if $sFlag ; then
+        if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
+            if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
+                enable_mon "$(list_get 1 "${plug_mons}")"
+                exit
+            fi
+        fi
+        enable_mon "$(list_get 1 "${plug_mons}")"
+        disable_mons "$(list_head "${disp_mons}")"
+        exit
+    fi
+
+    if [ "$(list_len "${plug_mons}")" -lt 3 ] ; then
+        echo 'At least three plugged monitors for this option.'
+        exit 0
+    fi
+
+    if $OFlag ; then
+        if [ "${OArg}" -ge "$(list_len "${mons}")" ] ; then
+            echo "Monitor ID '${OArg}' does not exist."
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+        mons_elt="$(list_get "${OArg}" "${mons}")"
+        if ! list_contains "${mons_elt}" "${plug_mons}"; then
+            echo "Monitor ID '${OArg}' not plugged in."
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+
+        disp_mons="$(list_del "${mons_elt}" "${disp_mons}")"
+        disable_mons "${disp_mons}"
+        enable_mon "${mons_elt}"
+    fi
+
+    if $SFlag ; then
+        if [ "${idx1}" -ge "$(list_len "${mons}")" ] || \
+            [ "${idx2}" -ge "$(list_len "${mons}")" ]; then
+            echo 'One or both monitor IDs do not exist.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+        if ! list_contains "$(list_get "${idx1}" "${mons}")" "${plug_mons}" || \
+            ! list_contains "$(list_get "${idx2}" "${mons}")" "${plug_mons}" ; then
+            echo 'One or both monitor IDs are not plugged in.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+
+        [ "${area}" = 'R' ] && area="--right-of" || area="--above"
+
+        mon1="$(list_get "${idx1}" "${mons}")"
+        mon2="$(list_get "${idx2}" "${mons}")"
+        disp_mons="$(list_del "${mon1}" "${disp_mons}")"
+        disp_mons="$(list_del "${mon2}" "${disp_mons}")"
+        disable_mons "${disp_mons}"
+        enable_mon "${mon1}"
+        enable_mon "${mon2}"
+        "${XRANDR}" --output "${mon2}" "${area}" "${mon1}"
+        exit
+    fi
+}
+
+main "$@"

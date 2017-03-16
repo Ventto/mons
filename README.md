@@ -1,18 +1,22 @@
 Mons
 ===================
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/Ventto/mons/blob/master/LICENSE)
-[![Language (Bash)](https://img.shields.io/badge/powered_by-Bash-brightgreen.svg)](https://www.gnu.org/software/bash)
+[![Language (XRandR)](https://img.shields.io/badge/powered_by-XRandR-brightgreen.svg)](https://www.x.org/archive/X11R7.5/doc/man/man1/xrandr.1.html)
 
-*"Mons is a Bash script to quickly manage 2-monitors display using xrandr."*
+*"Mons is a Shell script to quickly manage 2-monitors display using xrandr."*
 
-The purpose is to use *mons* as shortcut and quick command on a daily basis or at boot.
+## Perks
+
+* [x] **No requirement**: POSIX-compliant.
+* [x] **Useful**: perfectly fit for quick and daily use.
+* [x] **Painless**: for lazy users.
 
 # Installation
 
 * Package (AUR)
 
 ```
-$ yaourt -S mons
+$ pacaur -S mons
 ```
 
 * Manual
@@ -20,7 +24,7 @@ $ yaourt -S mons
 ```
 $ git clone https://github.com/Ventto/mons.git
 $ cd mons
-$ chmod +x src/mons.sh
+$ sudo make install
 ```
 
 # Usage

@@ -1,0 +1,3 @@
+[submodule "posix-shell-list"]
+	path = posix-shell-list
+	url = ../posix-shell-list.git

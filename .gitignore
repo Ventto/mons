@@ -1,10 +1,11 @@
 /*
 
-!src/
-src/*
-!src/mons.sh
+!posix-shell-list
 
+!mons
 !CONTRIBUTING.md
 !LICENSE
+!Makefile
 !README.md
 !.gitignore
+!.gitmodules
