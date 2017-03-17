@@ -1,6 +1,6 @@
 BINDIR  = $(DESTDIR)/usr/bin
-LIBDIR	= $(DESTDIR)/usr/lib/posix-shell-list
-LIB	    = posix-shell-list/list.sh
+LIBDIR  = $(DESTDIR)/usr/lib/posix-shell-list
+LIB     = posix-shell-list/list.sh
 
 install:
 	mkdir -p $(LIBDIR)
