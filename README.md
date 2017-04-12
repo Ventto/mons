@@ -22,10 +22,11 @@ $ pacaur -S mons
 * Manual
 
 ```
-$ git clone https://github.com/Ventto/mons.git
+$ git clone --recursive https://github.com/Ventto/mons.git
 $ cd mons
 $ sudo make install
 ```
+> Note: `--recursive` is needed for git submodule
 
 # Usage
 
