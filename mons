@@ -155,8 +155,8 @@ main() {
     if [ "$#" -eq 0 ]; then
         i=0
         for mon in ${mons}; do
-            if echo "${plug_mons}" | grep "${mon}" > /dev/null; then
-                if echo "${disp_mons}" | grep "${mon}" > /dev/null; then
+            if echo "${plug_mons}" | grep "^${mon}$" > /dev/null; then
+                if echo "${disp_mons}" | grep "^${mon}$" > /dev/null; then
                     state='(enabled)'
                 fi
                 printf '%-3s %-9s %-9s\n' "${i}:" "${mon}" "${state}"
