@@ -34,7 +34,7 @@ $ sudo make install
 Usage: mons [OPTION]...
 
 Options can not be used in conjunction.
-If no argument, prints plugged monitor ID list.
+If no argument, prints plugged-in monitor ID list.
 
 Information:
   -h:   Prints this help and exits.
