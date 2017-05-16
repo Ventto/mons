@@ -140,12 +140,12 @@ main() {
         echo 'xrandr: command not found.' ; exit 1
     fi
 
-    [ -z "${DISPLAY}" ] && echo 'X: server not started.'     && exit 1
-    [ -z "${XRANDR}" ]  && echo 'xrandr: command not found.' && exit 1
+    [ -z "${DISPLAY}" ] && { echo 'X: server not started.'     ; exit 1 }
+    [ -z "${XRANDR}" ]  && { echo 'xrandr: command not found.' ; exit 1 }
 
     xrandr_out="$("${XRANDR}" | grep connect)"
 
-    [ -z "${xrandr_out}" ] && echo 'No connected monitor.' && exit
+    [ -z "${xrandr_out}" ] && { echo 'No connected monitor.' ; exit }
 
     enabled_out="$(echo "${xrandr_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     mons="$(echo "${xrandr_out}" | cut -d' ' -f1)"
