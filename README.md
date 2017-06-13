@@ -51,6 +51,9 @@ More monitors:
   -S:   Enables only two monitors [MON1,MON2:P],
        MON1 and MON2 are monitor IDs,
        P takes the value [R] right or [T] top for the MON2's placement.
+
+Daemon mode:
+  -m:    Performs an automatic display if it detects only one monitor.
 ```
 
 # Examples
@@ -107,7 +110,13 @@ Like above but you want to inverse the placement:
 $ mons -S 5,0:R
 ```
 
+## Daemon mode
 
+Especially for laptops, after unplugging the additional monitors, it might be
+convenient to reset automatically the display for the remaining one.
 
+Run *mons* as daemon with *nohup*:
 
-
+```
+$ nohup mons -m > /dev/null 2>&1 &
+```
