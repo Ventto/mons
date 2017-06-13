@@ -8,8 +8,10 @@ Mons
 ## Perks
 
 * [x] **No requirement**: POSIX-compliant.
-* [x] **Useful**: perfectly fit for quick and daily use.
-* [x] **Painless**: for lazy users.
+* [x] **Useful**: Perfectly fit for quick and daily use.
+* [x] **Well known**: Laptop mode, projector mode, duplicate and extend.
+* [x] **More**: Select, move monitors and switch modes easily.
+* [x] **Extra**: Deamon mode option to reset display if detects only one monitor.
 
 # Installation
 
