@@ -51,11 +51,11 @@ Two monitors:
 More monitors:
   -O:   Enables only the selected monitor.
   -S:   Enables only two monitors [MON1,MON2:P],
-       MON1 and MON2 are monitor IDs,
-       P takes the value [R] right or [T] top for the MON2's placement.
+        MON1 and MON2 are monitor IDs,
+        P takes the value [R] right or [T] top for the MON2's placement.
 
 Daemon mode:
-  -m:    Performs an automatic display if it detects only one monitor.
+  -m:   Re-establishs the display if it detects only one monitor.
 ```
 
 # Examples
