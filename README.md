@@ -117,8 +117,10 @@ $ mons -S 5,0:R
 Especially for laptops, after unplugging the additional monitors, it might be
 convenient to reset automatically the display for the remaining one.
 
-Run *mons* as daemon with *nohup*:
+Run *mons* in background as follow:
 
 ```
-$ nohup mons -m > /dev/null 2>&1 &
+$ nohup mons -m > /dev/null 2>&1 &  (all shells)
+$ mons -m &!                        (zsh)
+$ mons -m &; disown                 (bash)
 ```
