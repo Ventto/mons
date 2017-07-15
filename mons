@@ -151,11 +151,14 @@ main() {
     [ -z "${XRANDR}" ]  && { echo 'xrandr: command not found.' ; exit 1; }
 
     if $mFlag ; then
+        previous=0; current=0
         while true; do
-            if [ "$("${XRANDR}" | grep ' connect' | wc -l)" -eq 1 ]; then
+            current="$("${XRANDR}" | grep ' connect' | wc -l)"
+            if [ "$current" -eq 1 ] && [ "$current" -ne "$previous" ]; then
                 "${XRANDR}" --auto
             fi
             sleep 3
+            previous="$current"
         done
     fi
 
