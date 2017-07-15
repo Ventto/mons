@@ -155,7 +155,7 @@ main() {
             if [ "$("${XRANDR}" | grep ' connect' | wc -l)" -eq 1 ]; then
                 "${XRANDR}" --auto
             fi
-            sleep 1
+            sleep 3
         done
     fi
 
