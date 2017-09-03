@@ -9,7 +9,7 @@ Mons
 
 * [x] **No requirement**: POSIX-compliant.
 * [x] **Useful**: Perfectly fit for laptops, quick and daily use.
-* [x] **Well known**: Laptop mode, projector mode, duplicate and extend.
+* [x] **Well known**: Laptop mode, projector mode, duplicate, mirror and extend.
 * [x] **More**: Select, move monitors and switch modes easily.
 * [x] **Extra**: Deamon mode option to reset display if detects only one monitor.
 
@@ -47,6 +47,7 @@ Two monitors:
   -s:   Second monitor only.
   -d:   Duplicates.
   -e:   Extends [ top | left | right | bottom ].
+  -m:   Mirror of the preferred monitor.
 
 More monitors:
   -O:   Enables only the selected monitor.
@@ -55,7 +56,7 @@ More monitors:
         P takes the value [R] right or [T] top for the MON2's placement.
 
 Daemon mode:
-  -m:   Re-establishs the display if it detects only one monitor.
+  -a:   Re-establishs the display if it detects only one monitor.
 ```
 
 # Examples
@@ -120,7 +121,7 @@ convenient to reset automatically the display for the remaining one.
 Run *mons* in background as follow:
 
 ```
-$ nohup mons -m > /dev/null 2>&1 &  (all shells)
-$ mons -m &!                        (zsh)
-$ mons -m &; disown                 (bash)
+$ nohup mons -a > /dev/null 2>&1 &  (all shells)
+$ mons -a &!                        (zsh)
+$ mons -a &; disown                 (bash)
 ```

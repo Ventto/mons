@@ -42,6 +42,7 @@ Two monitors:
   -s:    Second monitor only.
   -d:    Duplicates.
   -e:    Extends [ top | left | right | bottom ].
+  -m:    Mirror of the preferred monitor.
 
 More monitors:
   -O:    Enables only the selected monitor ID.
@@ -50,7 +51,7 @@ More monitors:
           P takes the value [R] right or [T] top for the MON2 placement.
 
 Daemon mode:
-  -m:    Performs an automatic display if it detects only one monitor.
+  -a:    Performs an automatic display if it detects only one monitor.
 '
 }
 
@@ -88,6 +89,7 @@ arg2xrandr() {
 }
 
 main() {
+    aFlag=false
     dFlag=false
     eFlag=false
     mFlag=false
@@ -97,10 +99,13 @@ main() {
     SFlag=false
     is_flag=false
 
-    while getopts 'hvmosde:O:S:' opt; do
+    while getopts 'hvamosde:O:S:' opt; do
         case $opt in
             h)  usage   ; exit ;;
             v)  version ; exit ;;
+            a)  $is_flag && arg_err
+                aFlag=true ; is_flag=true
+                ;;
             m)  $is_flag && arg_err
                 mFlag=true ; is_flag=true
                 ;;
@@ -150,7 +155,7 @@ main() {
     [ -z "${DISPLAY}" ] && { echo 'X: server not started.'     ; exit 1; }
     [ -z "${XRANDR}" ]  && { echo 'xrandr: command not found.' ; exit 1; }
 
-    if $mFlag ; then
+    if $aFlag ; then
         previous=0; current=0
         while true; do
             current="$("${XRANDR}" | grep ' connect' | wc -l)"
@@ -210,21 +215,36 @@ main() {
         exit
     fi
 
-    if ( $dFlag || $eFlag || $sFlag ) && \
-        [ "$(list_len "${plug_mons}")" -gt 2 ]; then
-        echo 'At most two plugged monitors for this option.'
-        exit
+    if ( $aFlag || $mFlag || $dFlag || $eFlag || $sFlag ); then
+        if [ "$(list_len "${plug_mons}")" -gt 2 ]; then
+            echo 'At most two plugged monitors for this option.'
+            exit
+        else
+            # Resets the screen configuration
+            disable_mons "$(list_get 1 "${plug_mons}")"
+            "${XRANDR}" --auto
+        fi
     fi
 
     if $dFlag ; then
-        "${XRANDR}" --auto
         "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
             --same-as "$(list_head "${plug_mons}")"
         exit $?
     fi
 
+    if $mFlag ; then
+        size="$(echo "${xrandr_out}" | cut -d' ' -f4 | cut -d'+' -f1)"
+        if [ -n "${size}" ]; then
+            "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+                --auto --scale-from  "${size}" \
+                --output "$(list_head "${plug_mons}")"
+            exit $?
+        else
+            exit 1
+        fi
+    fi
+
     if $eFlag ; then
-        "${XRANDR}" --auto
         "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
             "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
         exit $?
