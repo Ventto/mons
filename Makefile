@@ -3,6 +3,10 @@ LIBDIR  = $(DESTDIR)/usr/lib/posix-shell-list
 LIB     = posix-shell-list/list.sh
 
 install:
+	@if ! [ -r "$(LIB)" ]; then \
+		echo "$(LIB): missing file"; \
+		exit 1; \
+	fi
 	mkdir -p $(LIBDIR)
 	mkdir -p $(BINDIR)
 	chmod 644 $(LIB)
