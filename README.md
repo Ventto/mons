@@ -36,27 +36,33 @@ $ sudo make install
 Usage: mons [OPTION]...
 
 Options can not be used in conjunction.
-If no argument, prints plugged-in monitor ID list.
+If no argument, prints plugged-in monitor list with their ids.
 
 Information:
-  -h:   Prints this help and exits.
-  -v:   Prints version and exits.
+  -h    Prints this help and exits.
+  -v    Prints version and exits.
 
 Two monitors:
-  -o:   Preferred monitor only.
-  -s:   Second monitor only.
-  -d:   Duplicates.
-  -e:   Extends [ top | left | right | bottom ].
-  -m:   Mirror of the preferred monitor.
+  -o    Primary monitor only.
+  -s    Second monitor only.
+  -d    Duplicates the primary monitor.
+  -m    Mirrors the primary monitor.
+  -e <side>
+         Extends the primary monitor to the selected side
+         [ top | left | right | bottom ].
+  -n <side>
+         This mode selects the previous ones, one after another. The argument
+         sets the side for the extend mode.
 
 More monitors:
-  -O:   Enables only the selected monitor.
-  -S:   Enables only two monitors [MON1,MON2:P],
-        MON1 and MON2 are monitor IDs,
-        P takes the value [R] right or [T] top for the MON2's placement.
+  -O <mon>
+        Only enables the selected monitor wuth an id.
+  -S <mon1>,<mon2>:<pos>
+        Only enables two selected monitors with ids (<mon1>, <mon2>),
+        <pos> places the second one to the right or at top [R | T].
 
 Daemon mode:
-  -a:   Re-establishs the display if it detects only one monitor.
+  -a    Performs an automatic display if it detects only one monitor.
 ```
 
 # Examples
@@ -81,6 +87,25 @@ You want to only display the second one:
 
 ```
 $ mons -s
+```
+
+Go through every 2-monitors mode according the following sequence:
+
+1. Primary monitor only
+1. Second monitor only
+1. Extend mode whose the side is set with `-n <side>`
+1. Mirror
+1. Duplicate
+
+This mode is useful if you want to switch to every mode with only one shortcut.
+
+![alt 2-monitors modes](img/raw-body.png)
+
+```
+# Now in 'Second monitor mode'
+$ mons -n right # -> 'Extend mode'
+# Now in 'Extend mode'
+$ mons -n right # -> 'Mirror mode'
 ```
 
 ## Three monitors

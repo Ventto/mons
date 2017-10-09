@@ -2,6 +2,10 @@
 
 !posix-shell-list
 
+!img
+img/*
+!img/raw-body.png
+
 !mons
 !CONTRIBUTING.md
 !LICENSE

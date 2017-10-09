@@ -31,32 +31,38 @@ usage() {
     echo 'Usage: mons [OPTION]...
 
 Options can not be used in conjunction.
-If no argument, prints plugged-in monitor ID list.
+If no argument, prints plugged-in monitor list with their ids.
 
 Information:
-  -h:    Prints this help and exits.
-  -v:    Prints version and exits.
+  -h    Prints this help and exits.
+  -v    Prints version and exits.
 
 Two monitors:
-  -o:    Preferred monitor only.
-  -s:    Second monitor only.
-  -d:    Duplicates.
-  -e:    Extends [ top | left | right | bottom ].
-  -m:    Mirror of the preferred monitor.
+  -o    Primary monitor only.
+  -s    Second monitor only.
+  -d    Duplicates the primary monitor.
+  -m    Mirrors the primary monitor.
+  -e <side>
+         Extends the primary monitor to the selected side
+         [ top | left | right | bottom ].
+  -n <side>
+         This mode selects the previous ones, one after another. The argument
+         sets the side for the extend mode.
 
 More monitors:
-  -O:    Enables only the selected monitor ID.
-  -S:    Enables only two monitors [MON1,MON2:P],
-         MON1 and MON2 are monitor IDs,
-          P takes the value [R] right or [T] top for the MON2 placement.
+  -O <mon>
+        Only enables the selected monitor wuth an id.
+  -S <mon1>,<mon2>:<pos>
+        Only enables two selected monitors with ids (<mon1>, <mon2>),
+        <pos> places the second one to the right or at top [R | T].
 
 Daemon mode:
-  -a:    Performs an automatic display if it detects only one monitor.
+  -a    Performs an automatic display if it detects only one monitor.
 '
 }
 
 version() {
-    echo 'Mons 0.5
+    echo 'Mons 0.7
 Copyright (C) 2016 Thomas "Ventto" Venries.
 
 License MIT: <https://opensource.org/licenses/MIT>.
@@ -93,13 +99,14 @@ main() {
     dFlag=false
     eFlag=false
     mFlag=false
+    nFlag=false
     oFlag=false
     sFlag=false
     OFlag=false
     SFlag=false
     is_flag=false
 
-    while getopts 'hvamosde:O:S:' opt; do
+    while getopts 'hvamosde:n:O:S:' opt; do
         case $opt in
             h)  usage   ; exit ;;
             v)  version ; exit ;;
@@ -118,13 +125,13 @@ main() {
             d)  $is_flag && arg_err
                 dFlag=true ; is_flag=true
                 ;;
-            e)  $is_flag && arg_err
+            e|n)  $is_flag && arg_err
                 case ${OPTARG} in
                     left | right | bottom | top) ;;
                     *) arg_err ;;
                 esac
                 eArg=$OPTARG
-                eFlag=true ; is_flag=true
+                [ "$opt" = "e" ] && eFlag=true || nFlag=true ; is_flag=true
                 ;;
             O)  $is_flag && arg_err
                 ! echo "${OPTARG}" | grep -E '^[0-9]+$' > /dev/null && arg_err
@@ -158,7 +165,7 @@ main() {
     if $aFlag ; then
         previous=0; current=0
         while true; do
-            current="$("${XRANDR}" | grep ' connect' | wc -l)"
+            current="$("${XRANDR}" | grep -c ' connect')"
             if [ "$current" -eq 1 ] && [ "$current" -ne "$previous" ]; then
                 "${XRANDR}" --auto
             fi
@@ -167,13 +174,15 @@ main() {
         done
     fi
 
-    xrandr_out="$("${XRANDR}" | grep connect)"
+    xrandr_out="$("${XRANDR}")"
 
     [ -z "${xrandr_out}" ] && { echo 'No connected monitor.' ; exit; }
 
-    enabled_out="$(echo "${xrandr_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
-    mons="$(echo "${xrandr_out}" | cut -d' ' -f1)"
-    plug_mons="$(echo "${xrandr_out}" | grep ' connect'| cut -d' ' -f1)"
+    mons="$(echo "${xrandr_out}" | grep connect | cut -d' ' -f1)"
+
+    enabled_out="$(echo "${xrandr_out}" | grep ' connect')"
+    plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
+    enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
     if [ "$#" -eq 0 ]; then
@@ -193,10 +202,74 @@ main() {
 
     shift $((OPTIND - 1))
 
-    if $oFlag ; then
-        if [ "$(list_len "${plug_mons}")" -eq 1 ]; then
-            "${XRANDR}" --auto
-        else
+    if [ "$(list_len "${plug_mons}")" -eq 0 ] ; then
+        echo 'No monitor detected.' ; exit 1
+    fi
+    if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
+        $oFlag && "${XRANDR}" --auto || echo 'Only one monitor detected.'
+        exit
+    fi
+
+
+    if [ "$(list_len "${plug_mons}")" -gt 2 ]; then
+        echo 'At most two plugged monitors for this option.'
+        exit
+    else
+       # Resets the screen configuration
+       disable_mons "$(list_get 1 "${plug_mons}")"
+       "${XRANDR}" --auto
+
+        if $nFlag ; then
+            if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
+                echo "${enabled_out}" | grep prima > /dev/null 2>&1 && oFlag=true || sFlag=true
+            else
+                enabled_out="$(echo "${enabled_out}" | \
+                                sed 's/^.*\( [0-9]\+\x[0-9]\++[0-9]\++[0-9]\+\).*/\1/' | \
+                                tr -d ' ')"
+
+                out="$(echo "${enabled_out}" | head -n 1)"
+                w1="$(echo "${out}" | cut -d'x' -f1)"
+                out="$(echo "${out}" | cut -d'x' -f2)"
+                h1="$(echo "${out}" | cut -d'+' -f1)"
+                x1="$(echo "${out}" | cut -d'+' -f2)"
+                y1="$(echo "${out}" | cut -d'+' -f3)"
+                out="$(echo "${enabled_out}" | tail -n1)"
+                w2="$(echo "${out}" | cut -d'x' -f1)"
+                out="$(echo "${out}" | cut -d'x' -f2)"
+                h2="$(echo "${out}" | cut -d'+' -f1)"
+                x2="$(echo "${out}" | cut -d'+' -f2)"
+                y2="$(echo "${out}" | cut -d'+' -f3)"
+                out="$(echo "${xrandr_out}" | \
+                        awk "/^$(list_get 1 "${plug_mons}")/{nr[NR+1]}; NR in nr" | \
+                        awk '{print $1;}')"
+                wi2="$(echo "${out}" | cut -d'x' -f1)"
+                hi2="$(echo "${out}" | cut -d'x' -f2)"
+
+                if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
+                    if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
+                        mFlag=true
+                    else
+                        dFlag=true
+                    fi
+                else
+                    eFlag=true
+                fi
+            fi
+
+            if $oFlag ; then
+                oFlag=false; sFlag=true
+            elif $sFlag ; then
+                sFlag=false; eFlag=true
+            elif $eFlag ; then
+                eFlag=false; mFlag=true
+            elif $mFlag ; then
+                mFlag=false; dFlag=true
+            elif $dFlag ; then
+                dFlag=false; oFlag=true
+            fi
+        fi
+
+        if $oFlag ; then
             if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
                 if [ "$(list_head "${disp_mons}")" = "$(list_head "${plug_mons}")" ]; then
                     enable_mon "$(list_head "${plug_mons}")"
@@ -206,60 +279,44 @@ main() {
             disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
             disable_mons "${disp_mons}"
             enable_mon "$(list_head "${plug_mons}")"
-        fi
-        exit $?
-    fi
-
-    if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
-        echo 'Only one monitor detected.'
-        exit
-    fi
-
-    if ( $aFlag || $mFlag || $dFlag || $eFlag || $sFlag ); then
-        if [ "$(list_len "${plug_mons}")" -gt 2 ]; then
-            echo 'At most two plugged monitors for this option.'
-            exit
-        else
-            # Resets the screen configuration
-            disable_mons "$(list_get 1 "${plug_mons}")"
-            "${XRANDR}" --auto
-        fi
-    fi
-
-    if $dFlag ; then
-        "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-            --same-as "$(list_head "${plug_mons}")"
-        exit $?
-    fi
-
-    if $mFlag ; then
-        size="$(echo "${xrandr_out}" | cut -d' ' -f4 | cut -d'+' -f1)"
-        if [ -n "${size}" ]; then
-            "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-                --auto --scale-from  "${size}" \
-                --output "$(list_head "${plug_mons}")"
             exit $?
-        else
-            exit 1
         fi
-    fi
 
-    if $eFlag ; then
-        "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-            "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
-        exit $?
-    fi
+        if $dFlag ; then
+            "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+                --same-as "$(list_head "${plug_mons}")"
+            exit $?
+        fi
 
-    if $sFlag ; then
-        if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
-            if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
-                enable_mon "$(list_get 1 "${plug_mons}")"
-                exit
+        if $mFlag ; then
+            size="$(echo "${xrandr_out}" | grep primary | cut -d' ' -f4 | cut -d'+' -f1)"
+            if [ -n "${size}" ]; then
+                "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+                    --auto --scale-from  "${size}" \
+                    --output "$(list_head "${plug_mons}")"
+                exit $?
+            else
+                exit 1
             fi
         fi
-        enable_mon "$(list_get 1 "${plug_mons}")"
-        disable_mons "$(list_head "${disp_mons}")"
-        exit
+
+        if $eFlag ; then
+            "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+                "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
+            exit $?
+        fi
+
+        if $sFlag ; then
+            if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
+                if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
+                    enable_mon "$(list_get 1 "${plug_mons}")"
+                    exit
+                fi
+            fi
+            enable_mon "$(list_get 1 "${plug_mons}")"
+            disable_mons "$(list_head "${disp_mons}")"
+            exit
+        fi
     fi
 
     if [ "$(list_len "${plug_mons}")" -lt 3 ] ; then
