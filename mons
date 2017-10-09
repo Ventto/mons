@@ -94,6 +94,53 @@ arg2xrandr() {
     esac
 }
 
+whichmode() {
+    if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
+        if echo "${enabled_out}" | grep prima > /dev/null 2>&1; then
+            oFlag=true
+            echo 'Primary'
+        else
+            sFlag=true
+            echo 'Second'
+        fi
+    else
+        enabled_out="$(echo "${enabled_out}" | \
+                        sed 's/^.*\( [0-9]\+\x[0-9]\++[0-9]\++[0-9]\+\).*/\1/' | \
+                        tr -d ' ')"
+
+        out="$(echo "${enabled_out}" | head -n 1)"
+        w1="$(echo "${out}" | cut -d'x' -f1)"
+        out="$(echo "${out}" | cut -d'x' -f2)"
+        h1="$(echo "${out}" | cut -d'+' -f1)"
+        x1="$(echo "${out}" | cut -d'+' -f2)"
+        y1="$(echo "${out}" | cut -d'+' -f3)"
+        out="$(echo "${enabled_out}" | tail -n1)"
+        w2="$(echo "${out}" | cut -d'x' -f1)"
+        out="$(echo "${out}" | cut -d'x' -f2)"
+        h2="$(echo "${out}" | cut -d'+' -f1)"
+        x2="$(echo "${out}" | cut -d'+' -f2)"
+        y2="$(echo "${out}" | cut -d'+' -f3)"
+        out="$(echo "${xrandr_out}" | \
+                awk "/^$(list_get 1 "${plug_mons}")/{nr[NR+1]}; NR in nr" | \
+                awk '{print $1;}')"
+        wi2="$(echo "${out}" | cut -d'x' -f1)"
+        hi2="$(echo "${out}" | cut -d'x' -f2)"
+
+        if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
+            if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
+                mFlag=true
+                echo 'Mirror'
+            else
+                dFlag=true
+                echo 'Duplicate'
+            fi
+        else
+            eFlag=true
+            echo 'Extend'
+        fi
+    fi
+}
+
 main() {
     aFlag=false
     dFlag=false
@@ -185,7 +232,17 @@ main() {
     enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
+    if [ "$(list_len "${plug_mons}")" -eq 0 ] ; then
+        echo 'No monitor detected.' ; exit 1
+    fi
+
     if [ "$#" -eq 0 ]; then
+        echo "Monitors: $(list_len "${plug_mons}")"
+        if [ "$(list_len "${plug_mons}")" -gt 2 ] ; then
+            echo 'Mode: Selection'
+        else
+            echo "Mode: $(whichmode)"
+        fi
         i=0
         for mon in ${mons}; do
             if echo "${plug_mons}" | grep "^${mon}$" > /dev/null; then
@@ -202,9 +259,6 @@ main() {
 
     shift $((OPTIND - 1))
 
-    if [ "$(list_len "${plug_mons}")" -eq 0 ] ; then
-        echo 'No monitor detected.' ; exit 1
-    fi
     if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
         $oFlag && "${XRANDR}" --auto || echo 'Only one monitor detected.'
         exit
@@ -220,42 +274,7 @@ main() {
        "${XRANDR}" --auto
 
         if $nFlag ; then
-            if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
-                echo "${enabled_out}" | grep prima > /dev/null 2>&1 && oFlag=true || sFlag=true
-            else
-                enabled_out="$(echo "${enabled_out}" | \
-                                sed 's/^.*\( [0-9]\+\x[0-9]\++[0-9]\++[0-9]\+\).*/\1/' | \
-                                tr -d ' ')"
-
-                out="$(echo "${enabled_out}" | head -n 1)"
-                w1="$(echo "${out}" | cut -d'x' -f1)"
-                out="$(echo "${out}" | cut -d'x' -f2)"
-                h1="$(echo "${out}" | cut -d'+' -f1)"
-                x1="$(echo "${out}" | cut -d'+' -f2)"
-                y1="$(echo "${out}" | cut -d'+' -f3)"
-                out="$(echo "${enabled_out}" | tail -n1)"
-                w2="$(echo "${out}" | cut -d'x' -f1)"
-                out="$(echo "${out}" | cut -d'x' -f2)"
-                h2="$(echo "${out}" | cut -d'+' -f1)"
-                x2="$(echo "${out}" | cut -d'+' -f2)"
-                y2="$(echo "${out}" | cut -d'+' -f3)"
-                out="$(echo "${xrandr_out}" | \
-                        awk "/^$(list_get 1 "${plug_mons}")/{nr[NR+1]}; NR in nr" | \
-                        awk '{print $1;}')"
-                wi2="$(echo "${out}" | cut -d'x' -f1)"
-                hi2="$(echo "${out}" | cut -d'x' -f2)"
-
-                if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
-                    if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
-                        mFlag=true
-                    else
-                        dFlag=true
-                    fi
-                else
-                    eFlag=true
-                fi
-            fi
-
+            whichmode > /dev/null
             if $oFlag ; then
                 oFlag=false; sFlag=true
             elif $sFlag ; then

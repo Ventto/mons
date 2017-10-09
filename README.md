@@ -108,13 +108,15 @@ $ mons -n right # -> 'Extend mode'
 $ mons -n right # -> 'Mirror mode'
 ```
 
-## Three monitors
+## Three monitors (selection mode)
 
 
 Displays monitor list:
 
 ```
 $ mons
+Monitors: 3
+Mode: Selection
 0: LVDS-1   (enabled)
 1: DP-1     (enabled)
 5: VGA-1
