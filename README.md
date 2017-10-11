@@ -2,6 +2,9 @@ Mons
 ===================
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/Ventto/mons/blob/master/LICENSE)
 [![Language (XRandR)](https://img.shields.io/badge/powered_by-XRandR-brightgreen.svg)](https://www.x.org/archive/X11R7.5/doc/man/man1/xrandr.1.html)
+[![Vote for mons](https://img.shields.io/badge/AUR-Vote_for-yellow.svg)](https://aur.archlinux.org/packages/mons/)
+
+
 
 *"Mons is a Shell script to quickly manage 2-monitors display using xrandr."*
 
