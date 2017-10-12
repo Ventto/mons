@@ -97,13 +97,13 @@ arg2xrandr() {
 whichmode() {
     if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
         if echo "${enabled_out}" | grep prima > /dev/null 2>&1; then
-            oFlag=true; echo 'Primary'
+            echo 'primary'
         else
-            sFlag=true; echo 'Second'
+            echo 'second'
         fi
     else
         if [ "$(list_len "${plug_mons}")" -gt 2 ] ; then
-            echo 'Selection'; return 0
+            echo 'selection'; return 0
         fi
 
         enabled_out="$(echo "${enabled_out}" | \
@@ -119,12 +119,12 @@ whichmode() {
                 while read wi2 hi2; do
                     if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
                         if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
-                            mFlag=true; echo 'Mirror'
+                            echo 'mirror'
                         else
-                            dFlag=true; echo 'Duplicate'
+                            echo 'duplicate'
                         fi
                     else
-                        eFlag=true; echo 'Extend'
+                        echo 'extend'
                     fi
                 done
             done
@@ -262,18 +262,13 @@ main() {
        "${XRANDR}" --auto
 
         if $nFlag ; then
-            whichmode > /dev/null
-            if $oFlag ; then
-                oFlag=false; sFlag=true
-            elif $sFlag ; then
-                sFlag=false; eFlag=true
-            elif $eFlag ; then
-                eFlag=false; mFlag=true
-            elif $mFlag ; then
-                mFlag=false; dFlag=true
-            elif $dFlag ; then
-                dFlag=false; oFlag=true
-            fi
+            case "$(whichmode)" in
+                primary)   sFlag=true;;
+                second)    eFlag=true;;
+                extend)    mFlag=true;;
+                mirror)    dFlag=true;;
+                duplicate) oFlag=true;;
+            esac
         fi
 
         if $oFlag ; then
