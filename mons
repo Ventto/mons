@@ -257,10 +257,6 @@ main() {
         echo 'At most two plugged monitors for this option.'
         exit
     else
-       # Resets the screen configuration
-       disable_mons "$(list_get 1 "${plug_mons}")"
-       "${XRANDR}" --auto
-
         if $nFlag ; then
             case "$(whichmode)" in
                 primary)   sFlag=true;;
@@ -284,6 +280,22 @@ main() {
             exit $?
         fi
 
+        if $sFlag ; then
+            if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
+                if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
+                    enable_mon "$(list_get 1 "${plug_mons}")"
+                    exit
+                fi
+            fi
+            enable_mon "$(list_get 1 "${plug_mons}")"
+            disable_mons "$(list_head "${disp_mons}")"
+            exit
+        fi
+
+        # Resets the screen configuration
+        disable_mons "$(list_get 1 "${plug_mons}")"
+        "${XRANDR}" --auto
+
         if $dFlag ; then
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
                 --same-as "$(list_head "${plug_mons}")"
@@ -306,18 +318,6 @@ main() {
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
                 "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
             exit $?
-        fi
-
-        if $sFlag ; then
-            if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
-                if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
-                    enable_mon "$(list_get 1 "${plug_mons}")"
-                    exit
-                fi
-            fi
-            enable_mon "$(list_get 1 "${plug_mons}")"
-            disable_mons "$(list_head "${disp_mons}")"
-            exit
         fi
     fi
 
