@@ -245,41 +245,86 @@ main() {
         exit
     fi
 
-    shift $((OPTIND - 1))
+    if $nFlag ; then
+        case "$(whichmode)" in
+            primary)   sFlag=true;;
+            second)    eFlag=true;;
+            extend)    mFlag=true;;
+            mirror)    dFlag=true;;
+            duplicate) oFlag=true;;
+        esac
+    fi
 
     if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
-        $oFlag && "${XRANDR}" --auto || echo 'Only one monitor detected.'
+        if $oFlag ; then
+            # After unplugging each monitor, the last preferred one might be
+            # still turned off, so we need to turn it on.
+            [ "$(list_empty "${disp_mons}")" ] && "${XRANDR}" --auto
+        else
+            echo 'Only one monitor detected.'
+        fi
         exit
     fi
 
-
-    if [ "$(list_len "${plug_mons}")" -gt 2 ]; then
-        echo 'At most two plugged monitors for this option.'
-        exit
-    else
-        if $nFlag ; then
-            case "$(whichmode)" in
-                primary)   sFlag=true;;
-                second)    eFlag=true;;
-                extend)    mFlag=true;;
-                mirror)    dFlag=true;;
-                duplicate) oFlag=true;;
-            esac
-        fi
-
-        if $oFlag ; then
-            if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
-                if [ "$(list_head "${disp_mons}")" = "$(list_head "${plug_mons}")" ]; then
-                    enable_mon "$(list_head "${plug_mons}")"
-                    exit
-                fi
+    if $oFlag ; then
+        if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
+            if [ "$(list_head "${disp_mons}")" = "$(list_head "${plug_mons}")" ]; then
+                exit
             fi
-            disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
-            disable_mons "${disp_mons}"
-            enable_mon "$(list_head "${plug_mons}")"
-            exit $?
+        fi
+        disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
+        disable_mons "${disp_mons}"
+        enable_mon "$(list_head "${plug_mons}")"
+        exit
+    fi
+
+    if $OFlag ; then
+        if [ "${OArg}" -ge "$(list_len "${mons}")" ] ; then
+            echo "Monitor ID '${OArg}' does not exist."
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+        mons_elt="$(list_get "${OArg}" "${mons}")"
+        if ! list_contains "${mons_elt}" "${plug_mons}"; then
+            echo "Monitor ID '${OArg}' not plugged in."
+            echo 'Try without option to get monitor ID list.'
+            exit 2
         fi
 
+        disp_mons="$(list_del "${mons_elt}" "${disp_mons}")"
+        disable_mons "${disp_mons}"
+        enable_mon "${mons_elt}"
+        exit
+    fi
+
+    if $SFlag ; then
+        if [ "${idx1}" -ge "$(list_len "${mons}")" ] || \
+            [ "${idx2}" -ge "$(list_len "${mons}")" ]; then
+            echo 'One or both monitor IDs do not exist.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+        if ! list_contains "$(list_get "${idx1}" "${mons}")" "${plug_mons}" || \
+            ! list_contains "$(list_get "${idx2}" "${mons}")" "${plug_mons}" ; then
+            echo 'One or both monitor IDs are not plugged in.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+
+        [ "${area}" = 'R' ] && area="--right-of" || area="--above"
+
+        mon1="$(list_get "${idx1}" "${mons}")"
+        mon2="$(list_get "${idx2}" "${mons}")"
+        disp_mons="$(list_del "${mon1}" "${disp_mons}")"
+        disp_mons="$(list_del "${mon2}" "${disp_mons}")"
+        disable_mons "${disp_mons}"
+        enable_mon "${mon1}"
+        enable_mon "${mon2}"
+        "${XRANDR}" --output "${mon2}" "${area}" "${mon1}"
+        exit
+    fi
+
+    if [ "$(list_len "${plug_mons}")" -eq 2 ]; then
         if $sFlag ; then
             if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
                 if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
@@ -319,56 +364,8 @@ main() {
                 "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
             exit $?
         fi
-    fi
-
-    if [ "$(list_len "${plug_mons}")" -lt 3 ] ; then
-        echo 'At least three plugged monitors for this option.'
-        exit 0
-    fi
-
-    if $OFlag ; then
-        if [ "${OArg}" -ge "$(list_len "${mons}")" ] ; then
-            echo "Monitor ID '${OArg}' does not exist."
-            echo 'Try without option to get monitor ID list.'
-            exit 2
-        fi
-        mons_elt="$(list_get "${OArg}" "${mons}")"
-        if ! list_contains "${mons_elt}" "${plug_mons}"; then
-            echo "Monitor ID '${OArg}' not plugged in."
-            echo 'Try without option to get monitor ID list.'
-            exit 2
-        fi
-
-        disp_mons="$(list_del "${mons_elt}" "${disp_mons}")"
-        disable_mons "${disp_mons}"
-        enable_mon "${mons_elt}"
-    fi
-
-    if $SFlag ; then
-        if [ "${idx1}" -ge "$(list_len "${mons}")" ] || \
-            [ "${idx2}" -ge "$(list_len "${mons}")" ]; then
-            echo 'One or both monitor IDs do not exist.'
-            echo 'Try without option to get monitor ID list.'
-            exit 2
-        fi
-        if ! list_contains "$(list_get "${idx1}" "${mons}")" "${plug_mons}" || \
-            ! list_contains "$(list_get "${idx2}" "${mons}")" "${plug_mons}" ; then
-            echo 'One or both monitor IDs are not plugged in.'
-            echo 'Try without option to get monitor ID list.'
-            exit 2
-        fi
-
-        [ "${area}" = 'R' ] && area="--right-of" || area="--above"
-
-        mon1="$(list_get "${idx1}" "${mons}")"
-        mon2="$(list_get "${idx2}" "${mons}")"
-        disp_mons="$(list_del "${mon1}" "${disp_mons}")"
-        disp_mons="$(list_del "${mon2}" "${disp_mons}")"
-        disable_mons "${disp_mons}"
-        enable_mon "${mon1}"
-        enable_mon "${mon2}"
-        "${XRANDR}" --output "${mon2}" "${area}" "${mon1}"
-        exit
+    else
+        echo 'At most two plugged monitors for this option.'
     fi
 }
 
