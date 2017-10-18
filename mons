@@ -348,15 +348,20 @@ main() {
         fi
 
         if $mFlag ; then
-            size="$(echo "${xrandr_out}" | grep primary | cut -d' ' -f4 | cut -d'+' -f1)"
-            if [ -n "${size}" ]; then
-                "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-                    --auto --scale-from  "${size}" \
-                    --output "$(list_head "${plug_mons}")"
-                exit $?
+            xrandr_out="$(echo "${xrandr_out}" | \
+                          awk "/primary/{nr[NR]; nr[NR+1]}; NR in nr")"
+            if echo "${xrandr_out}" | \
+                grep -E 'primary [0-9]+x[0-9]+' >/dev/null 2>&1; then
+                size="$(echo "${xrandr_out}" | head -n1 | cut -d' ' -f4 | \
+                        cut -d'+' -f1)"
             else
-                exit 1
+                size="$(echo "${xrandr_out}" | tail -n1 | awk '{ print $1 }')"
             fi
+
+            "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
+                --auto --scale-from  "${size}" \
+                --output "$(list_head "${plug_mons}")"
+            exit $?
         fi
 
         if $eFlag ; then
