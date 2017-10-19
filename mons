@@ -258,8 +258,9 @@ main() {
     if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
         if $oFlag ; then
             # After unplugging each monitor, the last preferred one might be
-            # still turned off, so we need to turn it on.
-            [ "$(list_empty "${disp_mons}")" ] && "${XRANDR}" --auto
+            # still turned off or the window manager might need the monitor
+            # reset to cause the reconfiguration of the layout placement.
+            "${XRANDR}" --auto
         else
             echo 'Only one monitor detected.'
         fi
