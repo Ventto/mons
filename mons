@@ -110,13 +110,13 @@ whichmode() {
                         sed 's/^.*\( [0-9]\+\x[0-9]\++[0-9]\++[0-9]\+\).*/\1/')"
 
         echo "${enabled_out}" | head -n1 | sed -e 's/+/ /g' | \
-        while read trash x1 y1; do
+        while read -r trash x1 y1; do
             echo "${enabled_out}" | tail -n1 | sed -e 's/x/ /' -e 's/+/ /g' | \
-            while read w2 h2 x2 y2; do
+            while read -r w2 h2 x2 y2; do
                 echo "${xrandr_out}" | \
                     awk "/^$(list_get 1 "${plug_mons}")/{nr[NR+1]}; NR in nr" | \
                     awk '{print $1;}' | sed -e 's/x/ /' | \
-                while read wi2 hi2; do
+                while read -r wi2 hi2; do
                     if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
                         if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
                             echo 'mirror'
