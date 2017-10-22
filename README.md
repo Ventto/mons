@@ -10,11 +10,12 @@ Mons
 
 ## Perks
 
-* [x] **No requirement**: POSIX-compliant.
-* [x] **Useful**: Perfectly fit for laptops, quick and daily use.
-* [x] **Well known**: Laptop mode, projector mode, duplicate, mirror and extend.
-* [x] **More**: Select, move monitors and switch modes easily.
-* [x] **Extra**: Deamon mode option to reset display if detects only one monitor.
+* [x] **No requirement**: POSIX-compliant (minimal: *xorg-xrandr*)
+* [x] **Useful**: Perfectly fit for laptops, quick and daily use
+* [x] **Well known**: Laptop mode, projector mode, duplicate, mirror and extend
+* [x] **More**:  Select one or two monitors over several others
+* [x] **Extra**: Cycle through every mode with only one shortcut
+* [x] **Auto**: Deamon mode to automatically reset display
 
 # Installation
 
