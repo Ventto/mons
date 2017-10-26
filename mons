@@ -224,19 +224,21 @@ main() {
     fi
 
     xrandr_out="$("${XRANDR}")"
+    enabled_out="$(echo "${xrandr_out}" | grep connect)"
+    [ -z "${enabled_out}" ] && { echo 'No monitor output detected.'; exit; }
 
-    [ -z "${xrandr_out}" ] && { echo 'No connected monitor.' ; exit; }
+    # List of monitor outputs
+    mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
-    mons="$(echo "${xrandr_out}" | grep connect | cut -d' ' -f1)"
+    enabled_out="$(echo "${enabled_out}" | grep ' connect')"
+    [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
 
-    enabled_out="$(echo "${xrandr_out}" | grep ' connect')"
+    # List of connected monitors
     plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
-    enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
-    disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
-    if [ "$(list_len "${plug_mons}")" -eq 0 ] ; then
-        echo 'No monitor detected.' ; exit 1
-    fi
+    enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
+    # List of displayed monitors
+    disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
     if [ "$#" -eq 0 ]; then
         echo "Monitors: $(list_len "${plug_mons}")"
