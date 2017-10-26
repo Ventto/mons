@@ -132,17 +132,6 @@ whichmode() {
     fi
 }
 
-restore_dpi() {
-    [ "$(list_len "${plug_mons}")" -eq 1 ]  && return 0
-    [ "$(list_len "${disp_mons}")" -ne 1 ] && return 0
-
-    echo "${xrandr_out}" | grep "^$(list_head "${disp_mons}")" | \
-        sed 's/^.*\( [0-9]\+\)x.*\( [0-9]\+\)mm x.*/\1 \2/' | \
-        while read -r w wp; do
-            "${XRANDR}" --dpi "$(echo "$w/($wp/25.4)" | bc -l | cut -d'.' -f1)"
-        done
-}
-
 main() {
     aFlag=false
     dFlag=false
@@ -289,7 +278,6 @@ main() {
         disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
         disable_mons "${disp_mons}"
         enable_mon "$(list_head "${plug_mons}")"
-        restore_dpi
         exit
     fi
 
@@ -309,7 +297,6 @@ main() {
         disp_mons="$(list_del "${mons_elt}" "${disp_mons}")"
         disable_mons "${disp_mons}"
         enable_mon "${mons_elt}"
-        restore_dpi
         exit
     fi
 
