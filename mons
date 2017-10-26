@@ -56,6 +56,10 @@ More monitors:
         Only enables two selected monitors with ids (<mon1>, <mon2>),
         <pos> places the second one to the right or at top [R | T].
 
+Extra:
+  --dpi <dpi>
+        Set the DPI, a strictly positive value within the range [0 ; 27432].
+
 Daemon mode:
   -a    Performs an automatic display if it detects only one monitor.
 '
@@ -78,7 +82,7 @@ arg_err() {
 }
 
 enable_mon() {
-    "${XRANDR}" --display "${DISPLAY}" --output "${1}" --auto
+    "${XRANDR}" --output "${1}" --auto --dpi "${dpi}"
 }
 
 disable_mons() {
@@ -144,6 +148,24 @@ main() {
     SFlag=false
     is_flag=false
 
+    # As X has typically assumed 96 DPI and this is fine for many traditional
+    # monitors.
+    dpi=96
+
+    # getopts does not support long options. Pre-parsing is required.
+    for opt in "$@"; do
+        shift
+        if [ "$opt" = '--dpi' ]; then
+            ! echo "$1" | grep -E '^[1-9][0-9]*$' > /dev/null && arg_err
+            # xrandr lets user set the DPI value within the range [0;27432]
+            [ "$1" -eq 0 -o "$1" -gt 27432 ] && arg_err
+            dpi="$1"
+            is_flag=true; continue
+        fi
+        $is_flag && { is_flag=false; continue; }
+        set -- "$@" "$opt"
+    done
+
     while getopts 'hvamosde:n:O:S:' opt; do
         case $opt in
             h)  usage   ; exit ;;
@@ -205,28 +227,22 @@ main() {
         while true; do
             current="$("${XRANDR}" | grep -c ' connect')"
             if [ "$current" -eq 1 ] && [ "$current" -ne "$previous" ]; then
-                "${XRANDR}" --auto
+                "${XRANDR}" --auto --dpi "${dpi}"
             fi
             sleep 3
             previous="$current"
         done
     fi
 
+    # From xrandr basic output, we build monitor lists
     xrandr_out="$("${XRANDR}")"
     enabled_out="$(echo "${xrandr_out}" | grep connect)"
     [ -z "${enabled_out}" ] && { echo 'No monitor output detected.'; exit; }
-
-    # List of monitor outputs
     mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
-
     enabled_out="$(echo "${enabled_out}" | grep ' connect')"
     [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
-
-    # List of connected monitors
     plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
-
     enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
-    # List of displayed monitors
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
     if [ "$#" -eq 0 ]; then
@@ -262,7 +278,7 @@ main() {
             # After unplugging each monitor, the last preferred one might be
             # still turned off or the window manager might need the monitor
             # reset to cause the reconfiguration of the layout placement.
-            "${XRANDR}" --auto
+            "${XRANDR}" --auto --dpi "${dpi}"
         else
             echo 'Only one monitor detected.'
         fi
@@ -342,7 +358,7 @@ main() {
 
         # Resets the screen configuration
         disable_mons "$(list_get 1 "${plug_mons}")"
-        "${XRANDR}" --auto
+        "${XRANDR}" --auto --dpi "${dpi}"
 
         if $dFlag ; then
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
