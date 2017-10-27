@@ -39,8 +39,8 @@ $ sudo make install
 ```
 Usage: mons [OPTION]...
 
-Options can not be used in conjunction.
-If no argument, prints plugged-in monitor list with their ids.
+Without argument, it prints plugged-in monitor list with their ids.
+Options are exclusive and can be used in conjunction with --dpi option.
 
 Information:
   -h    Prints this help and exits.
@@ -64,6 +64,10 @@ More monitors:
   -S <mon1>,<mon2>:<pos>
         Only enables two selected monitors with ids (<mon1>, <mon2>),
         <pos> places the second one to the right or at top [R | T].
+
+Extra (in-conjunction options):
+  --dpi <dpi>
+        Set the DPI, a strictly positive value within the range [0 ; 27432].
 
 Daemon mode:
   -a    Performs an automatic display if it detects only one monitor.
@@ -143,6 +147,16 @@ Like above but you want to inverse the placement:
 ```
 $ mons -S 5,0:R
 ```
+
+## DPI value
+
+You might want to switch mode and set the DPI value.
+Use the `--dpi <dpi>` option in conjunction with all others options.
+
+```
+$ mons [OPTIONS] --dpi <dpi>
+```
+
 
 ## Daemon mode
 

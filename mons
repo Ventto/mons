@@ -30,8 +30,8 @@ fi
 usage() {
     echo 'Usage: mons [OPTION]...
 
-Options can not be used in conjunction.
-If no argument, prints plugged-in monitor list with their ids.
+Without argument, it prints plugged-in monitor list with their ids.
+Options are exclusive and can be used in conjunction with --dpi option.
 
 Information:
   -h    Prints this help and exits.
@@ -56,7 +56,7 @@ More monitors:
         Only enables two selected monitors with ids (<mon1>, <mon2>),
         <pos> places the second one to the right or at top [R | T].
 
-Extra:
+Extra (in-conjunction options):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
 
@@ -147,6 +147,8 @@ main() {
     OFlag=false
     SFlag=false
     is_flag=false
+    # Additional option
+    dpiFlag=false
 
     # As X has typically assumed 96 DPI and this is fine for many traditional
     # monitors.
@@ -160,11 +162,14 @@ main() {
             # xrandr lets user set the DPI value within the range [0;27432]
             [ "$1" -eq 0 -o "$1" -gt 27432 ] && arg_err
             dpi="$1"
-            is_flag=true; continue
+            dpiFlag=true; continue
         fi
-        $is_flag && { is_flag=false; continue; }
+        $dpiFlag && continue
         set -- "$@" "$opt"
     done
+
+    # DPI option must be used in conjunction with others options
+    [ "$#" -eq 0 ] && $dpiFlag && arg_err
 
     while getopts 'hvamosde:n:O:S:' opt; do
         case $opt in
