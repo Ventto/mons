@@ -6,6 +6,10 @@
 img/*
 !img/raw-body.png
 
+!test
+test/*
+!test/*.sh
+
 !mons
 !CONTRIBUTING.md
 !LICENSE
