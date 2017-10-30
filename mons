@@ -59,6 +59,8 @@ More monitors:
 Extra (in-conjunction options):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
+  --primary <mon_name>
+        Select a monitor as the primary output.
 
 Daemon mode:
   -a    Performs an automatic display if it detects only one monitor.
@@ -147,13 +149,14 @@ main() {
     OFlag=false
     SFlag=false
     is_flag=false
-    # Additional option
+    # Additional long options
     dpiFlag=false
     skipArg=false
-
+    pFlag=false
     # As X has typically assumed 96 DPI and this is fine for many traditional
     # monitors.
     dpi=96
+    primary=
 
     # getopts does not support long options. Pre-parsing is required.
     for opt in "$@"; do
@@ -164,6 +167,11 @@ main() {
             [ "$1" -eq 0 -o "$1" -gt 27432 ] && arg_err
             dpi="$1"
             dpiFlag=true; skipArg=true; continue
+        fi
+        if [ "$opt" = '--primary' ]; then
+            ! echo "$1" | grep -E '^[a-zA-Z][a-zA-Z0-9\-]+' > /dev/null && arg_err
+            primary="$1"
+            pFlag=true; skipArg=true; continue
         fi
         $skipArg && { skipArg=false; continue; }
         set -- "$@" "$opt"
@@ -225,6 +233,7 @@ main() {
     XRANDR="$(command -v xrandr)"
     [ "$?" -ne 0 ] && { echo 'xrandr: command not found.'; exit 1; }
 
+    # Daemon mode
     if $aFlag ; then
         previous=0; current=0
         while true; do
@@ -237,14 +246,35 @@ main() {
         done
     fi
 
-    # From xrandr basic output, we build monitor lists
+    # List all outputs (except primary one)
     xrandr_out="$("${XRANDR}")"
-    enabled_out="$(echo "${xrandr_out}" | grep connect)"
+    enabled_out="$(echo "${xrandr_out}" | grep 'connect')"
     [ -z "${enabled_out}" ] && { echo 'No monitor output detected.'; exit; }
     mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
+
+    # Set primary output
+    if $pFlag; then
+        if list_contains "${primary}" "${mons}"; then
+            "${XRANDR}" --output "${primary}" --primary
+        else
+            echo "${primary}: output not found."; exit 1
+        fi
+    else
+        primary="$(echo "${enabled_out}" | grep 'primary' | cut -d' ' -f1)"
+    fi
+
+    # Move primary to the head
+    if [ -n "${primary}" ]; then
+        mons="$(list_del "${primary}" "${mons}")"
+        mons="$(list_insert "${primary}" 0 "${mons}")"
+    fi
+
+    # List plugged-in and turned-on outputs
     enabled_out="$(echo "${enabled_out}" | grep ' connect')"
     [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
     plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
+    plug_mons="$(list_del "${primary}" "${plug_mons}")"
+    plug_mons="$(list_insert "${primary}" 0 "${plug_mons}")"
     enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
@@ -258,7 +288,11 @@ main() {
                 if echo "${disp_mons}" | grep "^${mon}$" > /dev/null; then
                     state='(enabled)'
                 fi
-                printf '%-3s %-9s %-9s\n' "${i}:" "${mon}" "${state}"
+                if [ "${mon}" = "${primary}" ]; then
+                    printf '%-4s %-8s %-8s %-8s\n' "${i}:*" "${mon}" "${state}"
+                else
+                    printf '%-4s %-8s %-8s\n' "${i}:" "${mon}" "${state}"
+                fi
             fi
             i=$((i+1))
             state=
