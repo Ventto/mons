@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ "$#" -ne 3 ] && { echo 'Three monitor ids are required.'; exit 2; }
+
 echo 'TEST: Selections'
 echo '#=========================#'
 ./mons
