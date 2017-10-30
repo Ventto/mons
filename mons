@@ -252,29 +252,30 @@ main() {
     [ -z "${enabled_out}" ] && { echo 'No monitor output detected.'; exit; }
     mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
+    # List plugged-in and turned-on outputs
+    enabled_out="$(echo "${enabled_out}" | grep ' connect')"
+    [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
+    plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
+
     # Set primary output
     if $pFlag; then
-        if list_contains "${primary}" "${mons}"; then
+        if list_contains "${primary}" "${plug_mons}"; then
             "${XRANDR}" --output "${primary}" --primary
         else
-            echo "${primary}: output not found."; exit 1
+            echo "${primary}: output not connected."; exit 1
         fi
     else
         primary="$(echo "${enabled_out}" | grep 'primary' | cut -d' ' -f1)"
     fi
 
-    # Move primary to the head
+    # Move the primary monitor to the head if connected otherwise the first
+    # connected monitor that appears in the xrandr output is considerate as
+    # the primary one.
     if [ -n "${primary}" ]; then
-        mons="$(list_del "${primary}" "${mons}")"
-        mons="$(list_insert "${primary}" 0 "${mons}")"
+        plug_mons="$(list_del "${primary}" "${plug_mons}")"
+        plug_mons="$(list_insert "${primary}" 0 "${plug_mons}")"
     fi
 
-    # List plugged-in and turned-on outputs
-    enabled_out="$(echo "${enabled_out}" | grep ' connect')"
-    [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
-    plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
-    plug_mons="$(list_del "${primary}" "${plug_mons}")"
-    plug_mons="$(list_insert "${primary}" 0 "${plug_mons}")"
     enabled_out="$(echo "${enabled_out}" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
