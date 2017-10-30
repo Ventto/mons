@@ -37,10 +37,8 @@ $ sudo make install
 # Usage
 
 ```
-Usage: mons [OPTION]...
-
-Without argument, it prints plugged-in monitor list with their ids.
-Options are exclusive and can be used in conjunction with --dpi option.
+Without argument, it prints connected monitors list with their names and ids.
+Options are exclusive and can be used in conjunction with extra options.
 
 Information:
   -h    Prints this help and exits.
@@ -68,6 +66,11 @@ More monitors:
 Extra (in-conjunction options):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
+  --primary <mon_name>
+        Select a connected monitor as the primary output. Run the script
+        without argument to print monitors information, the names are in the
+        second column between ids and status. The primary monitor is marked
+        by an asterisk.
 
 Daemon mode:
   -a    Performs an automatic display if it detects only one monitor.
@@ -157,6 +160,28 @@ Use the `--dpi <dpi>` option in conjunction with all others options.
 $ mons [OPTIONS] --dpi <dpi>
 ```
 
+## Primary monitor
+
+You might choose one of your monitors as the main one.
+You can use the `--primary <mon_name>` option alone or in conjunction with all
+others options.
+`<mon_name>` refers to the monitor name that appears in the list of connected
+monitors (ex: `LVDS-1` or `VGA-1`):
+
+```
+$ mons
+0:* LVDS-1   (enabled)
+5:  VGA-1
+```
+
+The '*' character means that the monitor is the primary one:
+
+```
+$ mons --primary VGA-1
+0:  LVDS-1   (enabled)
+5:* VGA-1
+
+```
 
 ## Daemon mode
 
