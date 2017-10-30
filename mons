@@ -149,6 +149,7 @@ main() {
     is_flag=false
     # Additional option
     dpiFlag=false
+    skipArg=false
 
     # As X has typically assumed 96 DPI and this is fine for many traditional
     # monitors.
@@ -162,9 +163,9 @@ main() {
             # xrandr lets user set the DPI value within the range [0;27432]
             [ "$1" -eq 0 -o "$1" -gt 27432 ] && arg_err
             dpi="$1"
-            dpiFlag=true; continue
+            dpiFlag=true; skipArg=true; continue
         fi
-        $dpiFlag && continue
+        $skipArg && { skipArg=false; continue; }
         set -- "$@" "$opt"
     done
 
