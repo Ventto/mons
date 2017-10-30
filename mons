@@ -219,13 +219,10 @@ main() {
         esac
     done
 
-    XRANDR="$(command -v xrandr)"
-    if [ "$?" -ne 0 ]; then
-        echo 'xrandr: command not found.' ; exit 1
-    fi
+    [ -z "${DISPLAY}" ] && { echo 'DISPLAY: no variable set.'; exit 1; }
 
-    [ -z "${DISPLAY}" ] && { echo 'X: server not started.'     ; exit 1; }
-    [ -z "${XRANDR}" ]  && { echo 'xrandr: command not found.' ; exit 1; }
+    XRANDR="$(command -v xrandr)"
+    [ "$?" -ne 0 ] && { echo 'xrandr: command not found.'; exit 1; }
 
     if $aFlag ; then
         previous=0; current=0
