@@ -51,10 +51,10 @@ Two monitors:
 
 More monitors:
   -O <mon>
-        Only enables the selected monitor wuth an id.
+        Only enables the monitor with a specified id.
   -S <mon1>,<mon2>:<pos>
-        Only enables two selected monitors with ids (<mon1>, <mon2>),
-        <pos> places the second one to the right or at top [R | T].
+        Only enables two monitors with specified ids. The specified position
+        places the second monitor on the right (R) or at the top (T).
 
 Extra (in-conjunction options):
   --dpi <dpi>
