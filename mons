@@ -20,12 +20,12 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-if [ ! -f "/usr/lib/posix-shell-list/list.sh" ]; then
-    echo '/usr/lib/posix-shell-list/list.sh: library not found.'
+if [ ! -f "/usr/lib/libshlist/liblist.sh" ]; then
+    echo '/usr/lib/libshlist/liblist.sh: library not found.'
     exit 1
 fi
 
-. /usr/lib/posix-shell-list/list.sh
+. /usr/lib/libshlist/liblist.sh
 
 usage() {
     echo 'Usage: mons [OPTION]...
@@ -104,14 +104,14 @@ arg2xrandr() {
 }
 
 whichmode() {
-    if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
+    if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
         if echo "${enabled_out}" | grep prima > /dev/null 2>&1; then
             echo 'primary'
         else
             echo 'second'
         fi
     else
-        if [ "$(list_len "${plug_mons}")" -gt 2 ] ; then
+        if [ "$(list_size "${plug_mons}")" -gt 2 ] ; then
             echo 'selection'; return 0
         fi
 
@@ -275,7 +275,7 @@ main() {
     # connected monitor that appears in the xrandr output is considerate as
     # the primary one.
     if [ -n "${primary}" ]; then
-        plug_mons="$(list_del "${primary}" "${plug_mons}")"
+        plug_mons="$(list_erase "${primary}" "${plug_mons}")"
         plug_mons="$(list_insert "${primary}" 0 "${plug_mons}")"
     fi
 
@@ -283,7 +283,7 @@ main() {
     disp_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
     if [ "$#" -eq 0 ]; then
-        echo "Monitors: $(list_len "${plug_mons}")"
+        echo "Monitors: $(list_size "${plug_mons}")"
         echo "Mode: $(whichmode)"
 
         i=0
@@ -314,7 +314,7 @@ main() {
         esac
     fi
 
-    if [ "$(list_len "${plug_mons}")" -eq 1 ] ; then
+    if [ "$(list_size "${plug_mons}")" -eq 1 ] ; then
         if $oFlag ; then
             # After unplugging each monitor, the last preferred one might be
             # still turned off or the window manager might need the monitor
@@ -327,19 +327,19 @@ main() {
     fi
 
     if $oFlag ; then
-        if [ "$(list_len "${disp_mons}")" -eq 1 ]; then
-            if [ "$(list_head "${disp_mons}")" = "$(list_head "${plug_mons}")" ]; then
+        if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
+            if [ "$(list_front "${disp_mons}")" = "$(list_front "${plug_mons}")" ]; then
                 exit
             fi
         fi
-        disp_mons="$(list_del "$(list_head "${plug_mons}")" "$disp_mons")"
+        disp_mons="$(list_erase "$(list_front "${plug_mons}")" "$disp_mons")"
         disable_mons "${disp_mons}"
-        enable_mon "$(list_head "${plug_mons}")"
+        enable_mon "$(list_front "${plug_mons}")"
         exit
     fi
 
     if $OFlag ; then
-        if [ "${OArg}" -ge "$(list_len "${mons}")" ] ; then
+        if [ "${OArg}" -ge "$(list_size "${mons}")" ] ; then
             echo "Monitor ID '${OArg}' does not exist."
             echo 'Try without option to get monitor ID list.'
             exit 2
@@ -351,15 +351,15 @@ main() {
             exit 2
         fi
 
-        disp_mons="$(list_del "${mons_elt}" "${disp_mons}")"
+        disp_mons="$(list_erase "${mons_elt}" "${disp_mons}")"
         disable_mons "${disp_mons}"
         enable_mon "${mons_elt}"
         exit
     fi
 
     if $SFlag ; then
-        if [ "${idx1}" -ge "$(list_len "${mons}")" ] || \
-            [ "${idx2}" -ge "$(list_len "${mons}")" ]; then
+        if [ "${idx1}" -ge "$(list_size "${mons}")" ] || \
+            [ "${idx2}" -ge "$(list_size "${mons}")" ]; then
             echo 'One or both monitor IDs do not exist.'
             echo 'Try without option to get monitor ID list.'
             exit 2
@@ -375,8 +375,8 @@ main() {
 
         mon1="$(list_get "${idx1}" "${mons}")"
         mon2="$(list_get "${idx2}" "${mons}")"
-        disp_mons="$(list_del "${mon1}" "${disp_mons}")"
-        disp_mons="$(list_del "${mon2}" "${disp_mons}")"
+        disp_mons="$(list_erase "${mon1}" "${disp_mons}")"
+        disp_mons="$(list_erase "${mon2}" "${disp_mons}")"
         disable_mons "${disp_mons}"
         enable_mon "${mon1}"
         enable_mon "${mon2}"
@@ -384,16 +384,16 @@ main() {
         exit
     fi
 
-    if [ "$(list_len "${plug_mons}")" -eq 2 ]; then
+    if [ "$(list_size "${plug_mons}")" -eq 2 ]; then
         if $sFlag ; then
-            if [ "$(list_len "${disp_mons}")" -eq 1 ] ; then
-                if [ "$(list_head "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
+            if [ "$(list_size "${disp_mons}")" -eq 1 ] ; then
+                if [ "$(list_front "${disp_mons}")" = "$(list_get 1 "${plug_mons}")" ] ; then
                     enable_mon "$(list_get 1 "${plug_mons}")"
                     exit
                 fi
             fi
             enable_mon "$(list_get 1 "${plug_mons}")"
-            disable_mons "$(list_head "${disp_mons}")"
+            disable_mons "$(list_front "${disp_mons}")"
             exit
         fi
 
@@ -403,7 +403,7 @@ main() {
 
         if $dFlag ; then
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-                --same-as "$(list_head "${plug_mons}")"
+                --same-as "$(list_front "${plug_mons}")"
             exit $?
         fi
 
@@ -420,13 +420,13 @@ main() {
 
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
                 --auto --scale-from  "${size}" \
-                --output "$(list_head "${plug_mons}")"
+                --output "$(list_front "${plug_mons}")"
             exit $?
         fi
 
         if $eFlag ; then
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
-                "$(arg2xrandr "$eArg")" "$(list_head "${plug_mons}")"
+                "$(arg2xrandr "$eArg")" "$(list_front "${plug_mons}")"
             exit $?
         fi
     else

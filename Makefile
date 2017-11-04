@@ -4,8 +4,8 @@ PKGDESC		= POSIX Shell script to quickly manage 2-monitors display.
 LICENSEDIR  = $(DESTDIR)/usr/share/licenses/$(PKGNAME)
 MANDIR		= $(DESTDIR)/usr/share/man/man1
 BINDIR  	= $(DESTDIR)/usr/bin
-LIBDIR  	= $(DESTDIR)/usr/lib/posix-shell-list
-LIB     	= posix-shell-list/list.sh
+LIBDIR  	= $(DESTDIR)/usr/lib/libshlist
+LIB     	= libshlist/liblist.sh
 
 install:
 	@if ! [ -r "$(LIB)" ]; then \
@@ -25,7 +25,7 @@ install:
 	chmod 644 $(LIB)
 	chmod 755 mons
 	cp LICENSE $(LICENSEDIR)/LICENSE
-	cp $(LIB) $(LIBDIR)/list.sh
+	cp $(LIB) $(LIBDIR)/liblist.sh
 	cp mons $(BINDIR)/mons
 
 uninstall:
