@@ -1,8 +1,11 @@
 #!/bin/sh
 
-# Caution: Required three monitors
-
-[ "$#" -ne 3 ] && { echo 'Three monitor ids are required.'; exit 2; }
+if [ "$#" -ne 3 ]; then
+    echo 'Usage: test-args.sh MON_ID1 MON_ID2 MON_ID3'
+    echo
+    echo 'Three monitor ids are required. Ids are given by `mons`.'
+    exit 1
+fi
 
 echo 'TEST: Bad Arguments'
 echo '#=========================#'
