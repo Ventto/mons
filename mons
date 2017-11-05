@@ -20,13 +20,6 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-if [ ! -f "/usr/lib/libshlist/liblist.sh" ]; then
-    echo '/usr/lib/libshlist/liblist.sh: library not found.'
-    exit 1
-fi
-
-. /usr/lib/libshlist/liblist.sh
-
 usage() {
     echo 'Usage: mons [OPTION]...
 
@@ -71,7 +64,7 @@ Daemon mode:
 }
 
 version() {
-    echo 'Mons 0.8
+    echo 'Mons 0.8.1
 Copyright (C) 2017 Thomas "Ventto" Venries.
 
 License MIT: <https://opensource.org/licenses/MIT>.
@@ -81,6 +74,13 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 '
 }
+
+# Helps to generate manpage with help2man before installing the library
+[ "$1" = '-h' ] && { usage; exit; }
+[ "$1" = '-v' ] && { version; exit; }
+lib='/usr/lib/libshlist/liblist.sh'
+[ ! -r "$lib" ] && { "$lib: library not found."; exit 1; }
+. "${lib}"
 
 arg_err() {
     usage ; exit 2

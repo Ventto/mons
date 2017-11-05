@@ -18,12 +18,14 @@ install:
 		exit 1; \
 	fi
 	mkdir -p $(MANDIR)
-	cp $(PKGNAME).1.gz $(MANDIR)/$(PKGNAME).1.gz
 	mkdir -p $(LICENSEDIR)
 	mkdir -p $(LIBDIR)
 	mkdir -p $(BINDIR)
+	chmod 644 $(PKGNAME).1.gz
+	chmod 644 LICENSE
 	chmod 644 $(LIB)
 	chmod 755 mons
+	cp $(PKGNAME).1.gz $(MANDIR)/$(PKGNAME).1.gz
 	cp LICENSE $(LICENSEDIR)/LICENSE
 	cp $(LIB) $(LIBDIR)/liblist.sh
 	cp mons $(BINDIR)/mons
