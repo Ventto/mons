@@ -238,14 +238,16 @@ main() {
 
     # Daemon mode
     if $aFlag ; then
-        previous=0; current=0
+        prev=0; i=0
         while true; do
-            current="$("${XRANDR}" | grep -c ' connect')"
-            if [ "$current" -eq 1 ] && [ "$current" -ne "$previous" ]; then
+            for edid in /sys/class/drm/*/edid; do
+                [ -n "$(cat "$edid")" ] && i=$((i+1))
+            done
+            if [ "$i" -eq 1 ] && [ "$i" != "$prev" ]; then
                 "${XRANDR}" --auto --dpi "${dpi}"
             fi
-            sleep 3
-            previous="$current"
+            prev="$i"; i=0
+            sleep 2
         done
     fi
 
