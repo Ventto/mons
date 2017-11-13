@@ -240,8 +240,8 @@ main() {
     if $aFlag ; then
         prev=0; i=0
         while true; do
-            for edid in /sys/class/drm/*/edid; do
-                [ -n "$(cat "$edid")" ] && i=$((i+1))
+            for status in /sys/class/drm/*/status; do
+                [ "$(<"$status")" = 'connected' ] && i=$((i+1))
             done
             if [ "$i" -eq 1 ] && [ "$i" != "$prev" ]; then
                 "${XRANDR}" --auto --dpi "${dpi}"
