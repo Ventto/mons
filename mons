@@ -49,7 +49,7 @@ More monitors:
         Only enables two monitors with specified ids. The specified position
         places the second monitor on the right (R) or at the top (T).
 
-Extra (in-conjunction options):
+Extra (in-conjunction or alone):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
   --primary <mon_name>
@@ -151,42 +151,40 @@ main() {
     sFlag=false
     OFlag=false
     SFlag=false
-    is_flag=false
-    # Additional long options
-    dpiFlag=false
-    skipArg=false
     pFlag=false
-    # As X has typically assumed 96 DPI and this is fine for many traditional
-    # monitors.
+    iFlag=false
+    is_flag=false
+    # X has assumed 96 DPI and this is fine for many traditional monitors.
     dpi=96
     primary=
 
-    # getopts does not support long options. Pre-parsing is required.
-    for opt in "$@"; do
+    # getopts does not support long options. We convert them to short one.
+    for arg in "$@"; do
         shift
-        if [ "$opt" = '--dpi' ]; then
-            ! echo "$1" | grep -E '^[1-9][0-9]*$' > /dev/null && arg_err
-            # xrandr lets user set the DPI value within the range [0;27432]
-            [ "$1" -eq 0 -o "$1" -gt 27432 ] && arg_err
-            dpi="$1"
-            dpiFlag=true; skipArg=true; continue
-        fi
-        if [ "$opt" = '--primary' ]; then
-            ! echo "$1" | grep -E '^[a-zA-Z][a-zA-Z0-9\-]+' > /dev/null && arg_err
-            primary="$1"
-            pFlag=true; skipArg=true; continue
-        fi
-        $skipArg && { skipArg=false; continue; }
-        set -- "$@" "$opt"
+        case "$arg" in
+            --dpi)      set -- "$@" '-i' ;;
+            --primary)  set -- "$@" '-p' ;;
+            *)          set -- "$@" "$arg"
+        esac
     done
 
-    # DPI option must be used in conjunction with others options
-    [ "$#" -eq 0 ] && $dpiFlag && arg_err
-
-    while getopts 'hvamosde:n:O:S:' opt; do
+    while getopts 'hvamosde:n:O:S:i:p:' opt; do
         case $opt in
-            h)  usage   ; exit ;;
-            v)  version ; exit ;;
+            # Long options
+            i)
+                if ! echo "${OPTARG}" | \
+                    grep -E '^[1-9][0-9]*$' > /dev/null 2>&1; then
+                    arg_err
+                fi
+                iFlag=true; dpi="$OPTARG"
+                ;;
+            p)  if ! echo "${OPTARG}" | \
+                    grep -E '^[a-zA-Z][a-zA-Z0-9\-]+' > /dev/null 2>&1; then
+                    arg_err
+                fi
+                pFlag=true; primary="$OPTARG"
+                ;;
+            # Short options
             a)  $is_flag && arg_err
                 aFlag=true ; is_flag=true
                 ;;
@@ -226,6 +224,8 @@ main() {
                 [ "${idx1}" = "${idx2}" ] && arg_err
                 SFlag=true ; is_flag=true
                 ;;
+            h)  usage   ; exit ;;
+            v)  version ; exit ;;
             \?) arg_err ;;
             :)  arg_err ;;
         esac
@@ -235,6 +235,9 @@ main() {
 
     XRANDR="$(command -v xrandr)"
     [ "$?" -ne 0 ] && { echo 'xrandr: command not found.'; exit 1; }
+
+    # DPI set
+    $iFlag && [ "$#" -eq 2 ] && { "${XRANDR}" --dpi "$dpi"; exit; }
 
     # Daemon mode
     if $aFlag ; then
@@ -264,11 +267,12 @@ main() {
 
     # Set primary output
     if $pFlag; then
-        if list_contains "${primary}" "${plug_mons}"; then
-            "${XRANDR}" --output "${primary}" --primary
-        else
-            echo "${primary}: output not connected."; exit 1
+        if ! list_contains "${primary}" "${plug_mons}"; then
+            echo "${primary}: output not connected."
+            exit 1
         fi
+        "${XRANDR}" --output "${primary}" --primary
+        [ "$#" -eq 2 ] && exit
     else
         primary="$(echo "${enabled_out}" | grep 'primary' | cut -d' ' -f1)"
     fi
