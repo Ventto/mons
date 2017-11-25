@@ -64,7 +64,7 @@ Daemon mode:
 }
 
 version() {
-    echo 'Mons 0.8.1
+    echo 'Mons 0.8.2
 Copyright (C) 2017 Thomas "Ventto" Venries.
 
 License MIT: <https://opensource.org/licenses/MIT>.
