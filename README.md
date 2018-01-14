@@ -100,7 +100,7 @@ You want to only display the second one:
 $ mons -s
 ```
 
-Go through every 2-monitors mode according the following sequence:
+With the `-n` option, go through every 2-mons mode consecutively:
 
 1. Primary monitor only
 1. Second monitor only
