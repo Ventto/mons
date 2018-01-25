@@ -265,6 +265,11 @@ main() {
     [ -z "${enabled_out}" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
     plug_mons="$(echo "${enabled_out}" | cut -d' ' -f1)"
 
+    if [ "$(list_size "${plug_mons}")" -eq 0 ]; then
+        echo "No monitor plugged-in."
+        exit 0
+    fi
+
     # Set primary output
     if $pFlag; then
         if ! list_contains "${primary}" "${plug_mons}"; then
