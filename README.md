@@ -128,8 +128,8 @@ Displays monitor list:
 $ mons
 Monitors: 3
 Mode: Selection
-0: LVDS-1   (enabled)
-1: DP-1     (enabled)
+0:* LVDS-1   (enabled)
+1: DP-1      (enabled)
 5: VGA-1
 ```
 
@@ -170,6 +170,8 @@ monitors (ex: `LVDS-1` or `VGA-1`):
 
 ```
 $ mons
+Monitors: 3
+Mode: Primary
 0:* LVDS-1   (enabled)
 5:  VGA-1
 ```
@@ -178,9 +180,10 @@ The '*' character means that the monitor is the primary one:
 
 ```
 $ mons --primary VGA-1
+Monitors: 3
+Mode: Primary
 0:  LVDS-1   (enabled)
 5:* VGA-1
-
 ```
 
 ## Daemon mode
