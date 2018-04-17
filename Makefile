@@ -1,37 +1,35 @@
-PKGNAME		= mons
-PKGDESC		= POSIX Shell script to quickly manage 2-monitors display.
+PKGNAME     := mons
+PKGDESC     := POSIX Shell script to quickly manage 2-monitors display.
+
+SCRIPT      = $(PKGNAME).sh
+MANPAGE     = $(PKGNAME).1.gz
 
 LICENSEDIR  = $(DESTDIR)/usr/share/licenses/$(PKGNAME)
-MANDIR		= $(DESTDIR)/usr/share/man/man1
-BINDIR  	= $(DESTDIR)/usr/bin
-LIBDIR  	= $(DESTDIR)/usr/lib/libshlist
-LIB     	= libshlist/liblist.sh
+MANDIR      = $(DESTDIR)/usr/share/man/man1
+BINDIR      = $(DESTDIR)/usr/bin
+LIBDIR      = $(DESTDIR)/usr/lib/libshlist
 
-install:
-	@if ! [ -r "$(LIB)" ]; then \
-		echo "$(LIB): missing file"; \
-		exit 1; \
-	fi
-	help2man -N -n "$(PKGDESC)" -h -h -v -v ./$(PKGNAME) | gzip - > $(PKGNAME).1.gz
-	@if ! [ -r "$(PKGNAME).1.gz" ]; then \
-		echo "$(PKGNAME).1.gz: missing manpage"; \
-		exit 1; \
-	fi
-	mkdir -p $(MANDIR)
-	mkdir -p $(LICENSEDIR)
+LIB         = libshlist/liblist.sh
+
+install: $(LIB) $(MANPAGE)
 	mkdir -p $(LIBDIR)
+	mkdir -p $(LICENSEDIR)
+	mkdir -p $(MANDIR)
 	mkdir -p $(BINDIR)
-	chmod 644 $(PKGNAME).1.gz
-	chmod 644 LICENSE
 	chmod 644 $(LIB)
-	chmod 755 mons
-	cp $(PKGNAME).1.gz $(MANDIR)/$(PKGNAME).1.gz
-	cp LICENSE $(LICENSEDIR)/LICENSE
+	chmod 644 LICENSE
+	chmod 644 $(MANPAGE)
+	chmod 755 $(SCRIPT)
 	cp $(LIB) $(LIBDIR)/liblist.sh
-	cp mons $(BINDIR)/mons
+	cp LICENSE $(LICENSEDIR)/LICENSE
+	cp $(MANPAGE) $(MANDIR)/$(MANPAGE)
+	cp $(SCRIPT) $(BINDIR)/$(PKGNAME)
+
+$(MANPAGE):
+	help2man -N -n "$(PKGDESC)" -h -h -v -v ./$(SCRIPT) | gzip - > $@
 
 uninstall:
 	$(RM) -r $(LIBDIR)
-	$(RM) $(BINDIR)/mons
+	$(RM) $(LICENSEDIR)/LICENSE $(MANDIR)/$(MANPAGE) $(BINDIR)/$(PKGNAME)
 
 .PHONY: install uninstall

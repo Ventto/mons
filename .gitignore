@@ -6,14 +6,10 @@
 img/*
 !img/raw-body.png
 
-!test
-test/*
-!test/*.sh
-
-!mons
+!.gitignore
+!.gitmodules
 !CONTRIBUTING.md
 !LICENSE
 !Makefile
 !README.md
-!.gitignore
-!.gitmodules
+!mons.sh
