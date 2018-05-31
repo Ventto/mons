@@ -15,7 +15,7 @@ Mons
 * [x] **Well known**: Laptop mode, projector mode, duplicate, mirror and extend
 * [x] **More**:  Select one or two monitors over several others
 * [x] **Extra**: Cycle through every mode with only one shortcut
-* [x] **Auto**: Deamon mode to automatically reset display
+* [x] **Auto**: Daemon mode to automatically reset display
 
 # Installation
 
