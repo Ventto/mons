@@ -29,7 +29,7 @@ $(MANPAGE):
 	help2man -N -n "$(PKGDESC)" -h -h -v -v ./$(SCRIPT) | gzip - > $@
 
 uninstall:
-	$(RM) -r $(LIBDIR)
-	$(RM) $(LICENSEDIR)/LICENSE $(MANDIR)/$(MANPAGE) $(BINDIR)/$(PKGNAME)
+	$(RM) -r $(LICENSEDIR) $(LIBDIR)
+	$(RM) $(MANDIR)/$(MANPAGE) $(BINDIR)/$(PKGNAME)
 
 .PHONY: install uninstall
