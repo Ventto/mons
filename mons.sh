@@ -87,7 +87,7 @@ arg_err() {
 }
 
 enable_mon() {
-    "${XRANDR}" --output "${1}" --auto --dpi "${dpi}"
+    "${XRANDR}" --output "${1}" --auto
 }
 
 disable_mons() {
@@ -155,7 +155,6 @@ main() {
     iFlag=false
     is_flag=false
     # X has assumed 96 DPI and this is fine for many traditional monitors.
-    dpi=96
     primary=
 
     # getopts does not support long options. We convert them to short one.
@@ -247,7 +246,7 @@ main() {
                 [ "$(<"$status")" = 'connected' ] && i=$((i+1))
             done
             if [ "$i" -eq 1 ] && [ "$i" != "$prev" ]; then
-                "${XRANDR}" --auto --dpi "${dpi}"
+                "${XRANDR}" --auto
             fi
             prev="$i"; i=0
             sleep 2
@@ -330,7 +329,7 @@ main() {
             # After unplugging each monitor, the last preferred one might be
             # still turned off or the window manager might need the monitor
             # reset to cause the reconfiguration of the layout placement.
-            "${XRANDR}" --auto --dpi "${dpi}"
+            "${XRANDR}" --auto
         else
             echo 'Only one monitor detected.'
         fi
@@ -410,7 +409,7 @@ main() {
 
         # Resets the screen configuration
         disable_mons "$(list_get 1 "${plug_mons}")"
-        "${XRANDR}" --auto --dpi "${dpi}"
+        "${XRANDR}" --auto
 
         if $dFlag ; then
             "${XRANDR}" --output "$(list_get 1 "${plug_mons}")" \
