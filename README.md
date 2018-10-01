@@ -1,5 +1,6 @@
 Mons
-===================
+====
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/Ventto/mons/blob/master/LICENSE)
 [![Language (XRandR)](https://img.shields.io/badge/powered_by-XRandR-brightgreen.svg)](https://www.x.org/archive/X11R7.5/doc/man/man1/xrandr.1.html)
 [![Vote for mons](https://img.shields.io/badge/AUR-Vote_for-yellow.svg)](https://aur.archlinux.org/packages/mons/)
@@ -27,7 +28,7 @@ $ pacaur -S mons
 
 * Manual
 
-```
+```bash
 $ git clone --recursive https://github.com/Ventto/mons.git
 $ cd mons
 $ sudo make install
@@ -63,7 +64,14 @@ More monitors:
         Only enables two monitors with specified ids. The specified position
         places the second monitor on the right (R) or at the top (T).
 
-Extra (in-conjunction options):
+Daemon mode:
+  -a    Performs an automatic display if it detects only one monitor.
+  -x <script>
+        Must be used in conjunction with the -a option. Every time the number
+        of connected monitors changes, mons calls the given script with the
+        MONS_NUMBER environment variable.
+
+Extra (in-conjunction or alone):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
   --primary <mon_name>
@@ -71,9 +79,6 @@ Extra (in-conjunction options):
         without argument to print monitors information, the names are in the
         second column between ids and status. The primary monitor is marked
         by an asterisk.
-
-Daemon mode:
-  -a    Performs an automatic display if it detects only one monitor.
 ```
 
 # Examples
@@ -112,7 +117,7 @@ This mode is useful if you want to switch to every mode with only one shortcut.
 
 ![alt 2-monitors modes](img/raw-body.png)
 
-```
+```bash
 # Now in 'Second monitor mode'
 $ mons -n right # -> 'Extend mode'
 # Now in 'Extend mode'
@@ -176,7 +181,7 @@ Mode: Primary
 5:  VGA-1
 ```
 
-The '*' character means that the monitor is the primary one:
+The `*` character means that the monitor is the primary one:
 
 ```
 $ mons --primary VGA-1
@@ -188,13 +193,50 @@ Mode: Primary
 
 ## Daemon mode
 
-Especially for laptops, after unplugging the additional monitors, it might be
-convenient to reset automatically the display for the remaining one.
+This mode is useful for laptops. After unplugging all monitors except the last
+one, *mons*'s "daemon" mode will reset the display and enable the latter.
 
-Run *mons* in background as follow:
+Use case: *"I connect a monitor to my laptop and I only want to work with that
+one, so I disable the native one. After a while, I will unplug the
+additional monitor and I need reset my display to re-activate the native one."*
 
-```
+* Run it as following:
+
+```bash
 $ nohup mons -a > /dev/null 2>&1 &  (all shells)
 $ mons -a &!                        (zsh)
 $ mons -a &; disown                 (bash)
+```
+
+* You can handle N-monitors on your own by using the `-x` option. *mons* will
+export the `${MONS_NUMBER}` environment variable and run the given Shell script
+everytime the number of connected monitors changes:
+
+```bash
+$ mons -a -x "<path>/generic-handler.sh"
+
+# Use it as configuration profiles:
+$ mons -a -x "<path>/home-profile.sh"
+$ mons -a -x "<path>/work-profile.sh"
+```
+
+* Example of `script.sh`:
+
+```bash
+#!/bin/sh
+
+case ${MONS_NUMBER} in
+    1)
+        mons -o
+        feh --no-fehbg --bg-fill "${HOME}/wallpapers/a.jpg"
+        ;;
+    2)
+        mons -e top
+        feh --no-fehbg --bg-fill "${HOME}/wallpapers/a.jpg" \
+                       --bg-fill "${HOME}/wallpapers/b.jpg"
+        ;;
+    *)
+        # Handle it manually
+        ;;
+esac
 ```
