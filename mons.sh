@@ -49,6 +49,13 @@ More monitors:
         Only enables two monitors with specified ids. The specified position
         places the second monitor on the right (R) or at the top (T).
 
+Daemon mode:
+  -a    Performs an automatic display if it detects only one monitor.
+  -x <script>
+        Must be used in conjunction with the -a option. Every time the number
+        of connected monitors changes, mons calls the given script with the
+        MONS_NUMBER environment variable.
+
 Extra (in-conjunction or alone):
   --dpi <dpi>
         Set the DPI, a strictly positive value within the range [0 ; 27432].
@@ -57,9 +64,6 @@ Extra (in-conjunction or alone):
         without argument to print monitors information, the names are in the
         second column between ids and status. The primary monitor is marked
         by an asterisk.
-
-Daemon mode:
-  -a    Performs an automatic display if it detects only one monitor.
 '
 }
 
@@ -153,6 +157,7 @@ main() {
     SFlag=false
     pFlag=false
     iFlag=false
+    xFlag=false
     is_flag=false
     # X has assumed 96 DPI and this is fine for many traditional monitors.
     primary=
@@ -167,7 +172,7 @@ main() {
         esac
     done
 
-    while getopts 'hvamosde:n:O:S:i:p:' opt; do
+    while getopts 'hvamosde:n:O:S:i:p:x:' opt; do
         case $opt in
             # Long options
             i)
@@ -223,12 +228,26 @@ main() {
                 [ "${idx1}" = "${idx2}" ] && arg_err
                 SFlag=true ; is_flag=true
                 ;;
+            x)  xFlag=true;
+                if [ ! -x "${OPTARG}" ]; then
+                    echo "${OPTARG}: file cannot be executed or does not exist"
+                    exit 2
+                fi
+                xArg="${OPTARG}"
+                ;;
             h)  usage   ; exit ;;
             v)  version ; exit ;;
             \?) arg_err ;;
             :)  arg_err ;;
         esac
     done
+
+    if $xFlag; then
+        if ! $aFlag; then
+            echo '-x: option can only be used in conjunction with -a'
+            exit 2
+        fi
+    fi
 
     [ -z "${DISPLAY}" ] && { echo 'DISPLAY: no variable set.'; exit 1; }
 
@@ -245,8 +264,13 @@ main() {
             for status in /sys/class/drm/*/status; do
                 [ "$(<"$status")" = 'connected' ] && i=$((i+1))
             done
-            if [ "$i" -eq 1 ] && [ "$i" != "$prev" ]; then
-                "${XRANDR}" --auto
+
+            if [ "$i" != "$prev" ]; then
+                if $xFlag; then
+                    MONS_NUMBER="${i}" sh "${xArg}"
+                else
+                    [ "$i" -eq 1 ] && "${XRANDR}" --auto
+                fi
             fi
             prev="$i"; i=0
             sleep 2
