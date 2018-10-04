@@ -146,6 +146,17 @@ whichmode() {
 }
 
 main() {
+    # =============================
+    #        Requirements
+    # =============================
+
+    [ -z "$DISPLAY" ]  && { echo 'DISPLAY: no variable set.';  exit 1; }
+    command -vp xrandr >/dev/null 2>&1 || { echo 'xrandr: command not found.'; exit 1; }
+
+    # =============================
+    #      Argument Checking
+    # =============================
+
     aFlag=false
     dFlag=false
     eFlag=false
@@ -180,7 +191,7 @@ main() {
                     grep -E '^[1-9][0-9]*$' > /dev/null 2>&1; then
                     arg_err
                 fi
-                iFlag=true; dpi="$OPTARG"
+                iFlag=true; iArg="$OPTARG"
                 ;;
             p)  if ! echo "$OPTARG" | \
                     grep -E '^[a-zA-Z][a-zA-Z0-9\-]+' > /dev/null 2>&1; then
@@ -249,15 +260,10 @@ main() {
         fi
     fi
 
-    [ -z "$DISPLAY" ] && { echo 'DISPLAY: no variable set.'; exit 1; }
+    # =============================
+    #         Daemon Mode
+    # =============================
 
-    XRANDR="$(command -v xrandr)"
-    [ "$?" -ne 0 ] && { echo 'xrandr: command not found.'; exit 1; }
-
-    # DPI set
-    $iFlag && [ "$#" -eq 2 ] && { "$XRANDR" --dpi "$dpi"; exit; }
-
-    # Daemon mode
     if $aFlag ; then
         prev=0; i=0
         while true; do
@@ -277,9 +283,7 @@ main() {
         done
     fi
 
-    # =============================
-    #   Getting Info From XRandR
-    # =============================
+    XRANDR="$(command -pv xrandr)"
 
     # List all outputs (except primary one)
     xrandr_out="$("$XRANDR")"
@@ -296,6 +300,13 @@ main() {
         echo "No monitor plugged-in."
         exit 0
     fi
+
+    # =============================
+    #     Conjunction Options
+    # =============================
+
+    # Set DPI
+    $iFlag && "$XRANDR" --dpi "$iArg"
 
     # Set primary output
     if $pFlag; then
@@ -421,6 +432,10 @@ main() {
         "$XRANDR" --output "$mon2" "$area" "$mon1"
         exit
     fi
+
+    # =============================
+    #     2-Monitors Options
+    # =============================
 
     if [ "$(list_size "$plug_mons")" -eq 2 ]; then
         if $sFlag ; then
