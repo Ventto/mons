@@ -56,14 +56,17 @@ Daemon mode:
         of connected monitors changes, mons calls the given script with the
         MONS_NUMBER environment variable.
 
-Extra (in-conjunction or alone):
-  --dpi <dpi>
-        Set the DPI, a strictly positive value within the range [0 ; 27432].
+Extra (in-conjunction):
   --primary <mon_name>
         Select a connected monitor as the primary output. Run the script
         without argument to print monitors information, the names are in the
         second column between ids and status. The primary monitor is marked
         by an asterisk.
+  --rotate <orientation>
+        It rotates the primary monitor if the -o option is used otherwise it
+        rotates the second one, [left, right, normal, inverted].
+  --dpi <dpi>
+        Set the DPI, a strictly positive value within the range [0 ; 27432].
 '
 }
 
@@ -96,6 +99,10 @@ enable_mon() {
 
 disable_mons() {
     for mon in $@; do "$XRANDR" --output "$mon" --off ; done
+}
+
+rotate() {
+    eval "\"\$XRANDR\" --output \"$1\" --rotate \"$2\""
 }
 
 arg2xrandr() {
@@ -167,6 +174,7 @@ main() {
     OFlag=false
     SFlag=false
     pFlag=false
+    rFlag=false
     iFlag=false
     xFlag=false
     is_flag=false
@@ -179,11 +187,12 @@ main() {
         case "$arg" in
             --dpi)      set -- "$@" '-i' ;;
             --primary)  set -- "$@" '-p' ;;
+            --rotate)   set -- "$@" '-r' ;;
             *)          set -- "$@" "$arg"
         esac
     done
 
-    while getopts 'hvamosde:n:O:S:i:p:x:' opt; do
+    while getopts 'hvamosde:n:O:S:i:p:r:x:' opt; do
         case $opt in
             # Long options
             i)
@@ -198,6 +207,12 @@ main() {
                     arg_err
                 fi
                 pFlag=true; primary="$OPTARG"
+                ;;
+            r)  if ! echo "$OPTARG" | \
+                    grep -E 'left|right|inverted|normal' > /dev/null 2>&1; then
+                    arg_err
+                fi
+                rFlag=true; rArg="$OPTARG"
                 ;;
             # Short options
             a)  $is_flag && arg_err
@@ -369,6 +384,7 @@ main() {
             # still turned off or the window manager might need the monitor
             # reset to cause the reconfiguration of the layout placement.
             "$XRANDR" --auto
+            $rFlag && rotate "$(list_front "${plug_mons}")" "$rArg"
         else
             echo 'Only one monitor detected.'
         fi
@@ -378,12 +394,14 @@ main() {
     if $oFlag ; then
         if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
             if [ "$(list_front "${disp_mons}")" = "$(list_front "${plug_mons}")" ]; then
+                $rFlag && rotate "$(list_front "${plug_mons}")" "$rArg"
                 exit
             fi
         fi
         disp_mons="$(list_erase "$(list_front "${plug_mons}")" "$disp_mons")"
         disable_mons "${disp_mons}"
         enable_mon "$(list_front "${plug_mons}")"
+        $rFlag && rotate "$(list_front "${plug_mons}")" "$rArg"
         exit
     fi
 
@@ -403,6 +421,7 @@ main() {
         disp_mons="$(list_erase "${mons_elt}" "${disp_mons}")"
         disable_mons "${disp_mons}"
         enable_mon "${mons_elt}"
+        $rFlag && rotate "$mons_elt" "$rArg"
         exit
     fi
 
@@ -430,6 +449,7 @@ main() {
         enable_mon "$mon1"
         enable_mon "$mon2"
         "$XRANDR" --output "$mon2" "$area" "$mon1"
+        $rFlag && rotate "$mon2" "$rArg"
         exit
     fi
 
@@ -447,6 +467,7 @@ main() {
             fi
             enable_mon "$(list_get 1 "$plug_mons")"
             disable_mons "$(list_front "$disp_mons")"
+            $rFlag && rotate "$(list_get 1 "${plug_mons}")" "$rArg"
             exit
         fi
 
@@ -457,7 +478,6 @@ main() {
         if $dFlag ; then
             "$XRANDR" --output "$(list_get 1 "$plug_mons")" \
                 --same-as "$(list_front "$plug_mons")"
-            exit $?
         fi
 
         if $mFlag ; then
@@ -474,14 +494,14 @@ main() {
             "$XRANDR" --output "$(list_get 1 "$plug_mons")" \
                 --auto --scale-from  "$size" \
                 --output "$(list_front "$plug_mons")"
-            exit $?
         fi
 
         if $eFlag ; then
             "$XRANDR" --output "$(list_get 1 "$plug_mons")" \
                 "$(arg2xrandr "$eArg")" "$(list_front "$plug_mons")"
-            exit $?
         fi
+
+        $rFlag && rotate "$(list_get 1 "${plug_mons}")" "$rArg"
     else
         echo 'At most two plugged monitors for this option.'
     fi
