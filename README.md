@@ -71,14 +71,17 @@ Daemon mode:
         of connected monitors changes, mons calls the given script with the
         MONS_NUMBER environment variable.
 
-Extra (in-conjunction or alone):
-  --dpi <dpi>
-        Set the DPI, a strictly positive value within the range [0 ; 27432].
+Extra (in-conjunction):
   --primary <mon_name>
         Select a connected monitor as the primary output. Run the script
         without argument to print monitors information, the names are in the
         second column between ids and status. The primary monitor is marked
         by an asterisk.
+  --rotate <orientation>
+        It rotates the primary monitor if the -o option is used otherwise it
+        rotates the second one, [left, right, normal, inverted].
+  --dpi <dpi>
+        Set the DPI, a strictly positive value within the range [0 ; 27432].
 ```
 
 # Examples
