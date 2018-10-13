@@ -152,6 +152,7 @@ main() {
 
     [ -z "$DISPLAY" ]  && { echo 'DISPLAY: no variable set.';  exit 1; }
     command -vp xrandr >/dev/null 2>&1 || { echo 'xrandr: command not found.'; exit 1; }
+    XRANDR="$(command -pv xrandr)"
 
     # =============================
     #      Argument Checking
@@ -282,8 +283,6 @@ main() {
             sleep 2
         done
     fi
-
-    XRANDR="$(command -pv xrandr)"
 
     # List all outputs (except primary one)
     xrandr_out="$("$XRANDR")"
