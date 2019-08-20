@@ -82,7 +82,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 # Helps to generate manpage with help2man before installing the library
 [ "$1" = '-h' ] && { usage; exit; }
 [ "$1" = '-v' ] && { version; exit; }
-lib='/usr/lib/libshlist/liblist.sh'
+lib='%LIBDIR%/liblist.sh'
 [ ! -r "$lib" ] && { "$lib: library not found."; exit 1; }
 . "$lib"
 

@@ -24,6 +24,7 @@ install: $(LIB) $(MANPAGE)
 	cp LICENSE $(LICENSEDIR)/LICENSE
 	cp $(MANPAGE) $(MANDIR)/$(MANPAGE)
 	cp $(SCRIPT) $(BINDIR)/$(PKGNAME)
+	sed -i -e "s#%LIBDIR%#$(LIBDIR)#" $(BINDIR)/$(PKGNAME)
 
 $(MANPAGE):
 	help2man -N -n "$(PKGDESC)" -h -h -v -v ./$(SCRIPT) | gzip - > $@
