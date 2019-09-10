@@ -26,6 +26,12 @@ Mons
 $ pacaur -S mons
 ```
 
+* Package (FreeBSD)
+
+```
+# pkg install mons
+```
+
 * Manual
 
 ```bash
