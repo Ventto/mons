@@ -4,10 +4,11 @@ PKGDESC     := POSIX Shell script to quickly manage 2-monitors display.
 SCRIPT      = $(PKGNAME).sh
 MANPAGE     = $(PKGNAME).1.gz
 
-LICENSEDIR  = $(DESTDIR)/usr/share/licenses/$(PKGNAME)
-MANDIR      = $(DESTDIR)/usr/share/man/man1
-BINDIR      = $(DESTDIR)/usr/bin
-LIBDIR      = $(DESTDIR)/usr/lib/libshlist
+PREFIX      = /usr
+LICENSEDIR  = $(DESTDIR)$(PREFIX)/share/licenses/$(PKGNAME)
+MANDIR      = $(DESTDIR)$(PREFIX)/share/man/man1
+BINDIR      = $(DESTDIR)$(PREFIX)/bin
+LIBDIR      = $(DESTDIR)$(PREFIX)/lib/libshlist
 
 LIB         = libshlist/liblist.sh
 
