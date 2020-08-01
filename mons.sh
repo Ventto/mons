@@ -47,7 +47,10 @@ More monitors:
         Only enables the monitor with a specified id.
   -S <mon1>,<mon2>:<pos>
         Only enables two monitors with specified ids. The specified position
-        places the second monitor on the right (R) or at the top (T).
+        places the second monitor on the right (R), top (T), left (L) or bottom (B) 
+        of first monitor.
+  -T <mon1>,<mon2>:<pos>,<mon3>:<pos>
+        Enables three monitors with specified ids, similar to -S option.
 
 Daemon mode:
   -a    Performs an automatic display if it detects only one monitor.
@@ -79,6 +82,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 '
 }
 
+
 # Helps to generate manpage with help2man before installing the library
 [ "$1" = '-h' ] && { usage; exit; }
 [ "$1" = '-v' ] && { version; exit; }
@@ -104,6 +108,10 @@ arg2xrandr() {
         right)  echo '--right-of'   ;;
         bottom) echo '--below'      ;;
         top)    echo '--above'      ;;
+        L)   echo '--left-of'    ;;
+        R)  echo '--right-of'   ;;
+        B) echo '--below'      ;;
+        T)    echo '--above'      ;;
     esac
 }
 
@@ -167,6 +175,7 @@ main() {
     sFlag=false
     OFlag=false
     SFlag=false
+    TFlag=false
     pFlag=false
     iFlag=false
     xFlag=false
@@ -184,7 +193,7 @@ main() {
         esac
     done
 
-    while getopts 'hvamosde:n:O:S:i:p:x:' opt; do
+    while getopts 'hvamosde:n:O:S:T:i:p:x:' opt; do
         case $opt in
             # Long options
             i)
@@ -239,6 +248,24 @@ main() {
                 ! echo "$area" | grep -E '^[RT]$' > /dev/null && arg_err
                 [ "$idx1" = "$idx2" ] && arg_err
                 SFlag=true ; is_flag=true
+                ;;
+            T)  $is_flag && arg_err
+                idx1="$(echo "$OPTARG" | cut -d',' -f1)"
+                idx2="$(echo "$OPTARG" | cut -d',' -f2)"
+                idx3="$(echo "$OPTARG" | cut -d',' -f3)"
+                area2="$(echo "$idx2" | cut -d ':' -f2)"
+                idx2="$(echo "$idx2" | cut -d ':' -f1)"
+                area3="$(echo "$idx3" | cut -d ':' -f2)"
+                idx3="$(echo "$idx3" | cut -d ':' -f1)"
+                ! echo "$idx1" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                ! echo "$idx2" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                ! echo "$area2" | grep -E '^[LRTB]$' > /dev/null && arg_err
+                ! echo "$idx3" | grep -E '^[0-9]+$' > /dev/null && arg_err
+                ! echo "$area3" | grep -E '^[LRTB]$' > /dev/null && arg_err
+                [ "$idx1" = "$idx2" ] && arg_err
+                [ "$idx1" = "$idx3" ] && arg_err
+                [ "$idx2" = "$idx3" ] && arg_err
+                TFlag=true ; is_flag=true
                 ;;
             x)  xFlag=true;
                 if [ ! -x "$OPTARG" ]; then
@@ -419,7 +446,7 @@ main() {
             exit 2
         fi
 
-        [ "$area" = 'R' ] && area="--right-of" || area="--above"
+        area="$(arg2xrandr "$area")"
 
         mon1="$(list_get "$idx1" "$mons")"
         mon2="$(list_get "$idx2" "$mons")"
@@ -429,6 +456,40 @@ main() {
         enable_mon "$mon1"
         enable_mon "$mon2"
         "$XRANDR" --output "$mon2" "$area" "$mon1"
+        exit
+    fi
+
+    if $TFlag ; then
+        if [ "$idx1" -ge "$(list_size "$mons")" ] || \
+            [ "$idx2" -ge "$(list_size "$mons")" ] || \
+            [ "$idx3" -ge "$(list_size "$mons")" ]; then
+            echo 'One or both monitor IDs do not exist.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+        if ! list_contains "$(list_get "$idx1" "$mons")" "$plug_mons" || \
+            ! list_contains "$(list_get "$idx2" "$mons")" "$plug_mons" || \
+            ! list_contains "$(list_get "$idx3" "$mons")" "$plug_mons" ; then
+            echo 'One or both monitor IDs are not plugged in.'
+            echo 'Try without option to get monitor ID list.'
+            exit 2
+        fi
+
+        area2="$(arg2xrandr "$area2")"
+        area3="$(arg2xrandr "$area3")"
+
+        mon1="$(list_get "$idx1" "$mons")"
+        mon2="$(list_get "$idx2" "$mons")"
+        mon3="$(list_get "$idx3" "$mons")"
+        disp_mons="$(list_erase "$mon1" "$disp_mons")"
+        disp_mons="$(list_erase "$mon2" "$disp_mons")"
+        disp_mons="$(list_erase "$mon3" "$disp_mons")"
+        disable_mons "$disp_mons"
+        enable_mon "$mon1"
+        enable_mon "$mon2"
+        enable_mon "$mon3"
+        "$XRANDR" --output "$mon2" "$area2" "$mon1"
+        "$XRANDR" --output "$mon3" "$area3" "$mon1"
         exit
     fi
 
