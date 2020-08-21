@@ -151,8 +151,15 @@ main() {
     # =============================
 
     [ -z "$DISPLAY" ]  && { echo 'DISPLAY: no variable set.';  exit 1; }
-    command -vp xrandr >/dev/null 2>&1 || { echo 'xrandr: command not found.'; exit 1; }
-    XRANDR="$(command -pv xrandr)"
+
+    if command -v xrandr >/dev/null 2>&1 ; then
+      XRANDR="$(command -v xrandr)"
+    elif command -vp xrandr >/dev/null 2>&1 ; then
+      XRANDR="$(command -pv xrandr)"
+    else
+      echo 'xrandr: command not found.'
+      exit 1
+    fi
 
     # =============================
     #      Argument Checking
