@@ -286,7 +286,7 @@ main() {
 
     # List all outputs (except primary one)
     xrandr_out="$("$XRANDR")"
-    enabled_out="$(echo "$xrandr_out" | grep 'connect')"
+    enabled_out="$(echo "$xrandr_out" | grep 'connect' | grep -v 'VIRTUAL[1-9]')"
     [ -z "$enabled_out" ] && { echo 'No monitor output detected.'; exit; }
     mons="$(echo "$enabled_out" | cut -d' ' -f1)"
 
