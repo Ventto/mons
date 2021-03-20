@@ -21,7 +21,8 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 usage() {
-    echo 'Usage: mons [OPTION]...
+    cat <<-'USAGE'
+Usage: mons [OPTION]...
 
 Without argument, it prints connected monitors list with their names and ids.
 Options are exclusive and can be used in conjunction with extra options.
@@ -64,11 +65,12 @@ Extra (in-conjunction or alone):
         without argument to print monitors information, the names are in the
         second column between ids and status. The primary monitor is marked
         by an asterisk.
-'
+USAGE
 }
 
 version() {
-    echo 'Mons 0.8.2
+    cat <<-'VERSION'
+Mons 0.8.2
 Copyright (C) 2017 Thomas "Ventto" Venries.
 
 License MIT: <https://opensource.org/licenses/MIT>.
@@ -76,12 +78,14 @@ License MIT: <https://opensource.org/licenses/MIT>.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-'
+VERSION
 }
 
 # Helps to generate manpage with help2man before installing the library
-[ "$1" = '-h' ] && { usage; exit; }
-[ "$1" = '-v' ] && { version; exit; }
+case "$1" in
+    ('-h') { usage; exit; };;
+    ('-v') { version; exit; };;
+esac
 lib='%LIBDIR%/liblist.sh'
 [ ! -r "$lib" ] && { "$lib: library not found."; exit 1; }
 . "$lib"
@@ -100,27 +104,29 @@ disable_mons() {
 
 arg2xrandr() {
     case $1 in
-        left)   echo '--left-of'    ;;
-        right)  echo '--right-of'   ;;
-        bottom) echo '--below'      ;;
-        top)    echo '--above'      ;;
+        (left)   echo '--left-of'    ;;
+        (right)  echo '--right-of'   ;;
+        (bottom) echo '--below'      ;;
+        (top)    echo '--above'      ;;
     esac
 }
 
 whichmode() {
-    if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
-        if echo "${enabled_out}" | grep prima > /dev/null 2>&1; then
+    case "$(list_size "${disp_mons}")" in (1)
+        case "${enabled_out}" in (prima)
             echo 'primary'
-        else
+        ;;(*)
             echo 'second'
-        fi
-    else
-        if [ "$(list_size "${plug_mons}")" -gt 2 ] ; then
+        ;;esac
+    ;;(*)
+        case "$(list_size "${plug_mons}")" in
+            ([01]) :
+            ;;(*)
             echo 'selection'; return 0
-        fi
+        ;;esac
 
         enabled_out="$(echo "${enabled_out}" | \
-                        sed 's/^.*\( [0-9]\+\x[0-9]\++[0-9]\++[0-9]\+\).*/\1/')"
+                        sed 's/^.*\( [0-9]\{1,\}\x[0-9]\{1,\}+[0-9]\{1,\}+[0-9]\{1,\}\).*/\1/')"
 
         echo "${enabled_out}" | head -n1 | sed -e 's/+/ /g' | \
         while read -r trash x1 y1; do
@@ -130,19 +136,19 @@ whichmode() {
                     awk "/^$(list_get 1 "${plug_mons}")/{nr[NR+1]}; NR in nr" | \
                     awk '{print $1;}' | sed -e 's/x/ /' | \
                 while read -r wi2 hi2; do
-                    if [ "$x1" = "$x2" ] && [ "$y1" = "$y2" ]; then
-                        if [ "$w2" != "$wi2" ] || [ "$h2" != "$hi2" ]; then
-                            echo 'mirror'
-                        else
+                    case "$x1 $y1" in ("$x2 $y2")
+                        case "$w2 $h2" in ("$wi2 $hi2")
                             echo 'duplicate'
-                        fi
-                    else
+                        ;;(*)
+                            echo 'mirror'
+                        ;;esac
+                    ;;(*)
                         echo 'extend'
-                    fi
+                    ;;esac
                 done
             done
         done
-    fi
+    ;;esac
 }
 
 main() {
@@ -150,7 +156,7 @@ main() {
     #        Requirements
     # =============================
 
-    [ -z "$DISPLAY" ]  && { echo 'DISPLAY: no variable set.';  exit 1; }
+    case "$DISPLAY" in ('') { echo 'DISPLAY: no variable set.';  exit 1; };; esac
     command -vp xrandr >/dev/null 2>&1 || { echo 'xrandr: command not found.'; exit 1; }
     XRANDR="$(command -pv xrandr)"
 
@@ -178,87 +184,89 @@ main() {
     for arg in "$@"; do
         shift
         case "$arg" in
-            --dpi)      set -- "$@" '-i' ;;
-            --primary)  set -- "$@" '-p' ;;
-            *)          set -- "$@" "$arg"
+            (--dpi)      set -- "$@" '-i' ;;
+            (--primary)  set -- "$@" '-p' ;;
+            (*)          set -- "$@" "$arg"
         esac
     done
 
     while getopts 'hvamosde:n:O:S:i:p:x:' opt; do
         case $opt in
             # Long options
-            i)
+            (i)
                 if ! echo "$OPTARG" | \
                     grep -E '^[1-9][0-9]*$' > /dev/null 2>&1; then
                     arg_err
                 fi
                 iFlag=true; iArg="$OPTARG"
                 ;;
-            p)  if ! echo "$OPTARG" | \
+            (p) if ! echo "$OPTARG" | \
                     grep -E '^[a-zA-Z][a-zA-Z0-9\-]+' > /dev/null 2>&1; then
                     arg_err
                 fi
                 pFlag=true; primary="$OPTARG"
                 ;;
             # Short options
-            a)  $is_flag && arg_err
+            (a) $is_flag && arg_err
                 aFlag=true ; is_flag=true
                 ;;
-            m)  $is_flag && arg_err
+            (m) $is_flag && arg_err
                 mFlag=true ; is_flag=true
                 ;;
-            o)  $is_flag && arg_err
+            (o) $is_flag && arg_err
                 oFlag=true ; is_flag=true
                 ;;
-            s)  $is_flag && arg_err
+            (s) $is_flag && arg_err
                 sFlag=true ; is_flag=true
                 ;;
-            d)  $is_flag && arg_err
+            (d) $is_flag && arg_err
                 dFlag=true ; is_flag=true
                 ;;
-            e|n)  $is_flag && arg_err
+            (e|n) $is_flag && arg_err
                 case ${OPTARG} in
-                    left | right | bottom | top) ;;
-                    *) arg_err ;;
+                    (left | right | bottom | top) ;;
+                    (*) arg_err ;;
                 esac
                 eArg=$OPTARG
-                [ "$opt" = "e" ] && eFlag=true || nFlag=true ; is_flag=true
+                case "$opt" in
+                    ("e") eFlag=true ;;
+                    (*)   nFlag=true ;;
+                esac
+                is_flag=true
                 ;;
-            O)  $is_flag && arg_err
-                ! echo "$OPTARG" | grep -E '^[0-9]+$' > /dev/null && arg_err
+            (O) $is_flag && arg_err
+                case "$OPTARG" in (*[!0-9]*|'') arg_err ;;esac
                 OArg=$OPTARG
                 OFlag=true ; is_flag=true
                 ;;
-            S)  $is_flag && arg_err
+            (S) $is_flag && arg_err
                 idx1="$(echo "$OPTARG" | cut -d',' -f1)"
                 idx2="$(echo "$OPTARG" | cut -d',' -f2)"
                 area="$(echo "$idx2" | cut -d ':' -f2)"
                 idx2="$(echo "$idx2" | cut -d ':' -f1)"
                 ! echo "$idx1" | grep -E '^[0-9]+$' > /dev/null && arg_err
                 ! echo "$idx2" | grep -E '^[0-9]+$' > /dev/null && arg_err
-                ! echo "$area" | grep -E '^[RT]$' > /dev/null && arg_err
-                [ "$idx1" = "$idx2" ] && arg_err
+                case "$area" in ([RT]) :;; (*) arg_err;; esac
+                case "$idx1" in ("$idx2") && arg_err;; esac
                 SFlag=true ; is_flag=true
                 ;;
-            x)  xFlag=true;
-                if [ ! -x "$OPTARG" ]; then
+            (x) xFlag=true;
+                [ -x "$OPTARG" ] || {
                     echo "${OPTARG}: file cannot be executed or does not exist"
                     exit 2
-                fi
+                }
                 xArg="$OPTARG"
                 ;;
-            h)  usage   ; exit ;;
-            v)  version ; exit ;;
-            \?) arg_err ;;
-            :)  arg_err ;;
+            (h) usage   ; exit ;;
+            (v) version ; exit ;;
+            (\?)arg_err ;;
+            (:) arg_err ;;
         esac
     done
 
-    if $xFlag; then
-        if ! $aFlag; then
-            echo '-x: option can only be used in conjunction with -a'
+    if $xFlag && ! $aFlag; then
+            printf %s\\n '-x: option can only be used in conjunction with -a'
             exit 2
-        fi
     fi
 
     # =============================
@@ -269,16 +277,18 @@ main() {
         prev=0; i=0
         while true; do
             for status in /sys/class/drm/*/status; do
-                [ "$(<"$status")" = 'connected' ] && i=$((i+1))
+                grep -q connected "$status" && i=$((i+1))
             done
 
-            if [ "$i" != "$prev" ]; then
+            case "$i" in 
+                ("$prev") :
+              ;;(*)
                 if $xFlag; then
                     MONS_NUMBER="$i" sh "$xArg"
                 else
-                    [ "$i" -eq 1 ] && "$XRANDR" --auto
+                    case "$i" in (1) "$XRANDR" --auto;; esac
                 fi
-            fi
+            ;;esac
             prev="$i"; i=0
             sleep 2
         done
@@ -287,18 +297,18 @@ main() {
     # List all outputs (except primary one)
     xrandr_out="$("$XRANDR")"
     enabled_out="$(echo "$xrandr_out" | grep 'connect')"
-    [ -z "$enabled_out" ] && { echo 'No monitor output detected.'; exit; }
+    case "$enabled_out" in ('') echo 'No monitor output detected.'; exit;; esac
     mons="$(echo "$enabled_out" | cut -d' ' -f1)"
 
     # List plugged-in and turned-on outputs
     enabled_out="$(echo "$enabled_out" | grep ' connect')"
-    [ -z "$enabled_out" ] && { echo 'No plugged-in monitor detected.'; exit 1; }
+    case "$enabled_out" in ('') echo 'No plugged-in monitor detected.'; exit 1;; esac
     plug_mons="$(echo "$enabled_out" | cut -d' ' -f1)"
 
-    if [ "$(list_size "$plug_mons")" -eq 0 ]; then
+    case "$(list_size "$plug_mons")" in (0)
         echo "No monitor plugged-in."
         exit 0
-    fi
+    ;;esac
 
     # =============================
     #     Conjunction Options
@@ -314,7 +324,7 @@ main() {
             exit 1
         fi
         "$XRANDR" --output "$primary" --primary
-        [ "$#" -eq 2 ] && exit
+        case "$#" in (2) exit;; esac
     else
         primary="$(echo "$enabled_out" | grep 'primary' | cut -d' ' -f1)"
     fi
@@ -322,15 +332,15 @@ main() {
     # Move the primary monitor to the head if connected otherwise the first
     # connected monitor that appears in the xrandr output is considerate as
     # the primary one.
-    if [ -n "$primary" ]; then
+    case "$primary" in (?*)
         plug_mons="$(list_erase "$primary" "$plug_mons")"
         plug_mons="$(list_insert "$primary" 0 "$plug_mons")"
-    fi
+    ;;esac
 
     enabled_out="$(echo "$enabled_out" | grep -E '\+[0-9]{1,4}\+[0-9]{1,4}')"
     disp_mons="$(echo "$enabled_out" | cut -d' ' -f1)"
 
-    if [ "$#" -eq 0 ]; then
+    case "$#" in (0)
         echo "Monitors: $(list_size "$plug_mons")"
         echo "Mode: $(whichmode)"
 
@@ -340,29 +350,29 @@ main() {
                 if echo "$disp_mons" | grep "^${mon}$" > /dev/null; then
                     state='(enabled)'
                 fi
-                if [ "$mon" = "$primary" ]; then
+                case "$mon" in ("$primary")
                     printf '%-4s %-8s %-8s %-8s\n' "${i}:*" "$mon" "$state"
-                else
+                ;;(*)
                     printf '%-4s %-8s %-8s\n' "${i}:" "$mon" "$state"
-                fi
+                ;;esac
             fi
             i=$((i+1))
             state=
         done
         exit
-    fi
+    ;;esac
 
     if $nFlag ; then
         case "$(whichmode)" in
-            primary)   sFlag=true;;
-            second)    eFlag=true;;
-            extend)    mFlag=true;;
-            mirror)    dFlag=true;;
-            duplicate) oFlag=true;;
+            (primary)   sFlag=true;;
+            (second)    eFlag=true;;
+            (extend)    mFlag=true;;
+            (mirror)    dFlag=true;;
+            (duplicate) oFlag=true;;
         esac
     fi
 
-    if [ "$(list_size "$plug_mons")" -eq 1 ] ; then
+    case "$(list_size "$plug_mons")" in (1)
         if $oFlag ; then
             # After unplugging each monitor, the last preferred one might be
             # still turned off or the window manager might need the monitor
@@ -372,14 +382,14 @@ main() {
             echo 'Only one monitor detected.'
         fi
         exit
-    fi
+    ;;esac
 
     if $oFlag ; then
-        if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
-            if [ "$(list_front "${disp_mons}")" = "$(list_front "${plug_mons}")" ]; then
+        case "$(list_size "${disp_mons}")" in (1)
+            case "$(list_front "${disp_mons}")" in ("$(list_front "${plug_mons}")")
                 exit
-            fi
-        fi
+            ;;esac
+        ;;esac
         disp_mons="$(list_erase "$(list_front "${plug_mons}")" "$disp_mons")"
         disable_mons "${disp_mons}"
         enable_mon "$(list_front "${plug_mons}")"
@@ -407,19 +417,19 @@ main() {
 
     if $SFlag ; then
         if [ "$idx1" -ge "$(list_size "$mons")" ] || \
-            [ "$idx2" -ge "$(list_size "$mons")" ]; then
+           [ "$idx2" -ge "$(list_size "$mons")" ]; then
             echo 'One or both monitor IDs do not exist.'
             echo 'Try without option to get monitor ID list.'
             exit 2
         fi
         if ! list_contains "$(list_get "$idx1" "$mons")" "$plug_mons" || \
-            ! list_contains "$(list_get "$idx2" "$mons")" "$plug_mons" ; then
+           ! list_contains "$(list_get "$idx2" "$mons")" "$plug_mons" ; then
             echo 'One or both monitor IDs are not plugged in.'
             echo 'Try without option to get monitor ID list.'
             exit 2
         fi
 
-        [ "$area" = 'R' ] && area="--right-of" || area="--above"
+        case "$area" in (R) area="--right-of";; (*) area="--above";; esac
 
         mon1="$(list_get "$idx1" "$mons")"
         mon2="$(list_get "$idx2" "$mons")"
@@ -436,14 +446,14 @@ main() {
     #     2-Monitors Options
     # =============================
 
-    if [ "$(list_size "$plug_mons")" -eq 2 ]; then
+    case "$(list_size "$plug_mons")" in (2)
         if $sFlag ; then
-            if [ "$(list_size "$disp_mons")" -eq 1 ] ; then
-                if [ "$(list_front "$disp_mons")" = "$(list_get 1 "$plug_mons")" ] ; then
+            case "$(list_size "$disp_mons")" in (1)
+                case "$(list_front "$disp_mons")" in ("$(list_get 1 "$plug_mons")")
                     enable_mon "$(list_get 1 "$plug_mons")"
                     exit
-                fi
-            fi
+                ;;esac
+            ;;esac
             enable_mon "$(list_get 1 "$plug_mons")"
             disable_mons "$(list_front "$disp_mons")"
             exit
@@ -481,9 +491,9 @@ main() {
                 "$(arg2xrandr "$eArg")" "$(list_front "$plug_mons")"
             exit $?
         fi
-    else
+    ;;(*)
         echo 'At most two plugged monitors for this option.'
-    fi
+    ;;esac
 }
 
 main "$@"
