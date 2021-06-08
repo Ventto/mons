@@ -83,7 +83,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 [ "$1" = '-h' ] && { usage; exit; }
 [ "$1" = '-v' ] && { version; exit; }
 lib='%LIBDIR%/liblist.sh'
-[ ! -r "$lib" ] && { "$lib: library not found."; exit 1; }
+[ ! -r "$lib" ] && { echo "$lib: library not found."; exit 1; }
 . "$lib"
 
 arg_err() {
