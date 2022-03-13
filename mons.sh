@@ -268,9 +268,13 @@ main() {
     if $aFlag ; then
         prev=0; i=0
         while true; do
-            for status in /sys/class/drm/*/status; do
-                [ "$(<"$status")" = 'connected' ] && i=$((i+1))
-            done
+            i=$($XRANDR | grep -Po '[^dis]connected' | wc -l)
+	        if [ $i -gt 1 ]; then
+	    	    MONITORS_LIST=$($XRANDR | grep -Po '.+[^dis]connected' | cut -sd' ' -f1)
+	    	    for monitor in $MONITORS_LIST; do
+			        [[ "LVDS-0" = $monitor && "closed" = $(cat /proc/acpi/button/lid/LID/state | grep -Po '(?<=state:).+$' | grep -Po '[^\s].+$') ]] && i=$((i-1))
+	    	    done
+	        fi
 
             if [ "$i" != "$prev" ]; then
                 if $xFlag; then
