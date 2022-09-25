@@ -98,15 +98,6 @@ disable_mons() {
     for mon in $@; do "$XRANDR" --output "$mon" --off ; done
 }
 
-arg2xrandr() {
-    case $1 in
-        left)   echo '--left-of'    ;;
-        right)  echo '--right-of'   ;;
-        bottom) echo '--below'      ;;
-        top)    echo '--above'      ;;
-    esac
-}
-
 whichmode() {
     if [ "$(list_size "${disp_mons}")" -eq 1 ]; then
         if echo "${enabled_out}" | grep prima > /dev/null 2>&1; then
@@ -477,8 +468,37 @@ main() {
         fi
 
         if $eFlag ; then
-            "$XRANDR" --output "$(list_get 1 "$plug_mons")" \
-                "$(arg2xrandr "$eArg")" "$(list_front "$plug_mons")"
+            primary="$(list_front "$plug_mons")"
+            size_primary="$(echo "$xrandr_out" | grep "$primary" | grep -oE '[0-9]+x[0-9]+')"
+            x_primary="$(echo "$size_primary" | cut -d'x' -f1)"
+            y_primary="$(echo "$size_primary" | cut -d'x' -f2)"
+
+            secondary="$(list_get 1 "$plug_mons")"
+            size_secondary="$(echo "$xrandr_out" | grep "$secondary" | grep -oE '[0-9]+x[0-9]+')"
+            x_secondary="$(echo "$size_secondary" | cut -d'x' -f1)"
+            y_secondary="$(echo "$size_secondary" | cut -d'x' -f2)"
+
+            case "$eArg" in
+                top)
+                    pos_primary="0x$y_secondary"
+                    pos_secondary="$(($((x_primary-x_secondary))/2))x0"
+                    ;;
+                bottom)
+                    pos_primary="$(($((x_secondary-x_primary))/2))x0"
+                    pos_secondary="0x$y_primary"
+                    ;;
+                left)
+                    pos_primary="${x_secondary}x0"
+                    pos_secondary="0x$(($((y_primary-y_secondary))/2))"
+                    ;;
+                right)
+                    pos_primary="0x$(($((y_secondary-y_primary))/2))"
+                    pos_secondary="${x_primary}x0"
+                    ;;
+            esac
+
+            "$XRANDR" --output "$primary" --pos "$pos_primary"\
+                      --output "$secondary" --pos "$pos_secondary"
             exit $?
         fi
     else
