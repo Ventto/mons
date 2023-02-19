@@ -469,12 +469,12 @@ main() {
 
         if $eFlag ; then
             primary="$(list_front "$plug_mons")"
-            size_primary="$(echo "$xrandr_out" | grep "$primary" | grep -oE '[0-9]+x[0-9]+')"
+            size_primary="$(echo "$xrandr_out" | grep "$primary" -A99 | tail -n +2 | grep + -m 1 | awk '{print $1}')"
             x_primary="$(echo "$size_primary" | cut -d'x' -f1)"
             y_primary="$(echo "$size_primary" | cut -d'x' -f2)"
 
             secondary="$(list_get 1 "$plug_mons")"
-            size_secondary="$(echo "$xrandr_out" | grep "$secondary" | grep -oE '[0-9]+x[0-9]+')"
+            size_secondary="$(echo "$xrandr_out" | grep "$secondary" -A99 | tail -n +2 | grep + -m 1 | awk '{print $1}')"
             x_secondary="$(echo "$size_secondary" | cut -d'x' -f1)"
             y_secondary="$(echo "$size_secondary" | cut -d'x' -f2)"
 
