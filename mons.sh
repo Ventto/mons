@@ -469,12 +469,22 @@ main() {
 
         if $eFlag ; then
             primary="$(list_front "$plug_mons")"
-            size_primary="$(echo "$xrandr_out" | grep "^$primary " -A99 | tail -n +2 | grep '\*' -m 1 | awk '{print $1}')"
+            # NOTE: specifying both + and * here might introduce issues
+            # last time we did because * was not there when on secondary only
+            size_primary="$(echo "$xrandr_out" | grep "^$primary " -A99 | tail -n +2 | grep '[\*\+]' -m 1 | awk '{print $1}')"
+            # NOTE: this is for when the monitor is not active (just take the highest resolution)
+            if [ -z "$size_primary" ]; then
+                size_primary="$(echo "$xrandr_out" | grep "^$primary " -A99 | head -n 2 | tail -1 | awk '{print $1}')"
+            fi
             x_primary="$(echo "$size_primary" | cut -d'x' -f1)"
             y_primary="$(echo "$size_primary" | cut -d'x' -f2)"
 
             secondary="$(list_get 1 "$plug_mons")"
-            size_secondary="$(echo "$xrandr_out" | grep "^$secondary " -A99 | tail -n +2 | grep '\*' -m 1 | awk '{print $1}')"
+            size_secondary="$(echo "$xrandr_out" | grep "^$secondary " -A99 | tail -n +2 | grep '[\*\+]' -m 1 | awk '{print $1}')"
+            # NOTE: this is for when the monitor is not active (just take the highest resolution)
+            if [ -z "$size_secondary" ]; then
+                size_secondary="$(echo "$xrandr_out" | grep "^$secondary " -A99 | head -n 2 | tail -1 | awk '{print $1}')"
+            fi
             x_secondary="$(echo "$size_secondary" | cut -d'x' -f1)"
             y_secondary="$(echo "$size_secondary" | cut -d'x' -f2)"
 
